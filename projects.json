@@ -6,7 +6,8 @@
     "color": "#3b82f6",
     "priority": "media",
     "links": {
-      "dev": "https://github.com/mpvilla88-arch/spendix",
+      "git": "https://github.com/mpvilla88-arch/spendix",
+      "dev": "",
       "prod": "https://spendix-tau.vercel.app"
     }
   },
@@ -17,7 +18,8 @@
     "color": "#a78bfa",
     "priority": "alta",
     "links": {
-      "dev": "https://github.com/mpvilla88-arch/prosphero",
+      "git": "https://github.com/mpvilla88-arch/prosphero",
+      "dev": "",
       "prod": "https://app.prosphero.it"
     }
   },
@@ -28,7 +30,8 @@
     "color": "#6b4fa0",
     "priority": "alta",
     "links": {
-      "dev": "https://github.com/moduliagesciapp-creator/moduli-agesci",
+      "git": "https://github.com/moduliagesciapp-creator/moduli-agesci",
+      "dev": "",
       "prod": "https://moduli-agesci.vercel.app"
     }
   },
@@ -39,7 +42,8 @@
     "color": "#10b981",
     "priority": "bassa",
     "links": {
-      "dev": "https://github.com/mpvilla88-arch/zona-app",
+      "git": "https://github.com/mpvilla88-arch/zona-app",
+      "dev": "",
       "prod": "https://www.zonapp.it"
     }
   },
@@ -50,7 +54,9 @@
     "color": "#b5451b",
     "priority": "media",
     "links": {
-      "dev": "https://github.com/mpvilla88-arch/ndc"
+      "git": "",
+      "dev": "",
+      "prod": ""
     }
   }
 ]

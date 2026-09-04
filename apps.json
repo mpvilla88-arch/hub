@@ -12,7 +12,7 @@
     "id": "fotovoltaico",
     "name": "Simulatore Fotovoltaico",
     "desc": "Calcolo risparmio e ritorno investimento impianto FV",
-    "url": "fotovoltaico.html",
+    "url": "simulatore_fotovoltaico.html",
     "category": "Casa",
     "tags": ["energia", "simulatore"],
     "icon": "☀"

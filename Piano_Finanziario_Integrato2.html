@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piano Finanziario P.IVA – Analisi Quinquennale</title>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+  --accent:#4f7fff; --green:#22c77a; --orange:#f59e0b; --red:#ef4444;
+  --text:#e8eaf6; --muted:#8892b0;
+  --cons:#38bdf8; --real:#22c77a; --ott:#a78bfa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* NAV TABS TOP */
+.topnav{background:#12162a;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:0;position:sticky;top:0;z-index:100}
+.topnav h1{font-size:15px;font-weight:700;color:#fff;padding:14px 0;margin-right:28px;white-space:nowrap}
+.navtab{padding:14px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;border-bottom:2px solid transparent;transition:all .15s}
+.navtab:hover{color:var(--text)}
+.navtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.scenario-tabs{display:flex;gap:6px;margin-left:auto;padding:8px 0}
+.stab{padding:6px 16px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}
+.stab:hover{border-color:var(--accent);color:var(--text)}
+.stab.active-cons{background:rgba(56,189,248,.15);border-color:var(--cons);color:var(--cons)}
+.stab.active-real{background:rgba(34,199,122,.15);border-color:var(--real);color:var(--real)}
+.stab.active-ott{background:rgba(167,139,250,.15);border-color:var(--ott);color:var(--ott)}
+
+/* VIEWS */
+.view{display:none;padding:24px 28px}
+.view.active{display:block}
+
+/* SECTION TITLE */
+.stitle{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.stitle:first-child{margin-top:0}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:4px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:10px 10px 0 0}
+.kpi.accent::before{background:var(--accent)}.kpi.green::before{background:var(--green)}
+.kpi.orange::before{background:var(--orange)}.kpi.red::before{background:var(--red)}.kpi.purple::before{background:var(--ott)}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-size:20px;font-weight:700;color:#fff;line-height:1}
+.kpi-value.big{font-size:17px}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* CARD / TABLE */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+.card-header{padding:13px 18px;background:var(--surface2);border-bottom:1px solid var(--border);font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.scroll-x{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:9px 13px;background:var(--surface2);color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;text-align:right;border-bottom:1px solid var(--border)}
+th:first-child{text-align:left}
+td{padding:9px 13px;text-align:right;border-bottom:1px solid rgba(46,51,80,.45);color:var(--text)}
+td:first-child{text-align:left}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,127,255,.04)}
+.row-total td{font-weight:700;background:rgba(79,127,255,.06);color:#fff}
+.row-netto td{font-weight:700;color:var(--green)}
+.row-muted td{color:var(--muted);font-size:12px}
+.row-tasse td{color:#fca5a5}
+.row-warn td{color:var(--orange)}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.badge-ff{background:rgba(34,199,122,.15);color:var(--green)}
+.badge-ord{background:rgba(239,68,68,.12);color:#fca5a5}
+.badge-ok{background:rgba(34,199,122,.15);color:var(--green)}
+.badge-ko{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* WARNING */
+.wbanner{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px 16px;color:#fca5a5;font-size:13px;margin:0 0 16px;display:flex;align-items:flex-start;gap:10px}
+.wbanner.hidden{display:none}
+
+/* NOTE */
+.note{background:rgba(79,127,255,.06);border:1px solid rgba(79,127,255,.2);border-radius:8px;padding:13px 16px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+.note strong{color:var(--text)}
+
+/* GRID2 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid2{grid-template-columns:1fr}}
+
+/* BAR CHART */
+.bar-row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.bar-label{width:100px;font-size:12px;flex-shrink:0}
+.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:18px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;font-weight:700;color:#fff;min-width:36px;transition:width .4s}
+
+/* 60 MESI */
+.months-toggle{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tbtn{padding:6px 13px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}
+.tbtn:hover{border-color:var(--accent);color:var(--text)}
+.year-row td{background:var(--surface2);color:#fff;font-weight:700;font-size:12px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.year-row:hover td{background:rgba(79,127,255,.12)}
+.month-row.hidden{display:none}
+.year-total-row td{font-weight:700;background:rgba(79,127,255,.08);border-top:1px solid var(--border)}
+.alert-month td{background:rgba(239,68,68,.05)}
+
+/* ═══════════════════════════════════
+   EDITOR STYLES
+═══════════════════════════════════ */
+.editor-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:1000px){.editor-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.editor-grid{grid-template-columns:1fr}}
+
+.edit-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.edit-card-head{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.edit-card-head .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.edit-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+
+.field-row{display:flex;flex-direction:column;gap:4px}
+.field-row label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.4px}
+.field-row input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-size:13px;padding:7px 10px;width:100%;
+  transition:border-color .15s;font-family:inherit
+}
+.field-row input:focus{outline:none;border-color:var(--accent)}
+.field-row input.warn{border-color:var(--orange)}
+
+/* Grid interna all'editor card per anni 1-5 */
+.anno-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.anno-label{font-size:10px;color:var(--muted);font-weight:700;text-align:center;margin-bottom:2px;letter-spacing:.4px}
+.anno-grid input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-size:12px;padding:6px 4px;text-align:center;width:100%;
+  transition:border-color .15s;font-family:inherit
+}
+.anno-grid input:focus{outline:none;border-color:var(--accent)}
+.anno-grid input.warn{border-color:var(--orange)}
+.anno-grid input.readonly{opacity:.5;cursor:default}
+
+.field-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.field-label-row label{font-size:11px;color:var(--muted);font-weight:600}
+.field-label-row .calc-note{font-size:10px;color:var(--accent);cursor:pointer}
+
+.sep{height:1px;background:var(--border);margin:6px 0}
+
+.reset-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;margin-left:auto}
+.reset-btn:hover{border-color:var(--red);color:var(--red)}
+
+.params-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.params-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0}
+.param-item{padding:14px 18px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.param-item:last-child{border-right:none}
+.param-item label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.4px;display:block;margin-bottom:5px}
+.param-item input,.param-item select{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-size:13px;padding:6px 10px;width:100%;font-family:inherit
+}
+.param-item input:focus,.param-item select:focus{outline:none;border-color:var(--accent)}
+
+.live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--green);font-weight:700;letter-spacing:.5px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.mode-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.mode-toggle button{padding:5px 12px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;transition:all .15s}
+.mode-toggle button.active{background:var(--accent);color:#fff}
+
+.computed-val{font-size:11px;color:var(--accent);font-weight:600;margin-top:2px}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <h1>📊 Piano P.IVA</h1>
+  <button class="navtab active" onclick="showView('dashboard')">Dashboard</button>
+  <button class="navtab" onclick="showView('editor')">✏️ Modifica Dati</button>
+  <div class="scenario-tabs">
+    <button class="stab active-cons" onclick="setScenario('cons')" id="stab-cons">📉 Conservativo</button>
+    <button class="stab" onclick="setScenario('real')" id="stab-real">📊 Realistico</button>
+    <button class="stab" onclick="setScenario('ott')" id="stab-ott">📈 Ottimistico</button>
+  </div>
+</div>
+
+<!-- ══════════════ VIEW: DASHBOARD ══════════════ -->
+<div class="view active" id="view-dashboard">
+
+  <div class="wbanner hidden" id="warning50">
+    <span style="font-size:18px;flex-shrink:0">⚠️</span>
+    <div id="warning50text"></div>
+  </div>
+
+  <div class="note">
+    <strong>📋 Metodologia:</strong>
+    Forfettario (anni 1-2): coeff. redditività 78%, imposta sostitutiva 5%, INPS GS 26,23%.
+    Ordinario (anni 3-5): spese deducibili <span id="note-spese">10%</span>, INPS GS 26,23%, IRPEF a scaglioni + addizionali ~2%.
+    <strong>Tutti i valori si ricalcolano in tempo reale</strong> — modifica i dati nella scheda "Modifica Dati".
+  </div>
+
+  <div class="stitle">Sintesi Scenario — <span id="scLabel">Conservativo</span> <span class="live-badge"><span class="live-dot"></span>LIVE</span></div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="stitle">Fatturato per Cliente · Vincolo 50% Az.1 (regime forfettario)</div>
+  <div class="card">
+    <div class="card-header"><span>Composizione Fatturato Annuo</span><small id="scLabel2">Scenario Conservativo</small></div>
+    <div class="scroll-x"><table><thead><tr>
+      <th>Cliente / Fonte</th><th>Anno 1</th><th>Anno 2</th><th>Anno 3</th><th>Anno 4</th><th>Anno 5</th>
+    </tr></thead><tbody id="fatturatoBody"></tbody></table></div>
+  </div>
+
+  <div class="stitle">Prospetto Economico — Calcoli Corretti</div>
+  <div class="card">
+    <div class="card-header">Analisi Fiscale e Netti</div>
+    <div class="scroll-x"><table><thead><tr>
+      <th>Voce</th><th>Anno 1</th><th>Anno 2</th><th>Anno 3</th><th>Anno 4</th><th>Anno 5</th>
+    </tr></thead><tbody id="prospectoBody"></tbody></table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header">Dettaglio Az.1 &amp; Az.2 (Giorni / Tariffe)</div>
+      <div class="scroll-x"><table><thead><tr>
+        <th>Parametro</th><th>Anno 1</th><th>Anno 2</th><th>Anno 3</th><th>Anno 4</th><th>Anno 5</th>
+      </tr></thead><tbody id="dettaglioBody"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-header">Quota % Az.1 sul Totale — Vincolo &lt;50%</div>
+      <div style="padding:16px" id="quotaChart"></div>
+    </div>
+  </div>
+
+  <div class="stitle">Proiezione Mensile 60 Mesi</div>
+  <div class="months-toggle">
+    <button class="tbtn" onclick="toggleAll()">👁️ Espandi/Nascondi tutti</button>
+    <button class="tbtn" onclick="toggleYear(1)">Anno 1</button>
+    <button class="tbtn" onclick="toggleYear(2)">Anno 2</button>
+    <button class="tbtn" onclick="toggleYear(3)">Anno 3</button>
+    <button class="tbtn" onclick="toggleYear(4)">Anno 4</button>
+    <button class="tbtn" onclick="toggleYear(5)">Anno 5</button>
+  </div>
+  <div class="card scroll-x"><table>
+    <thead><tr>
+      <th>Mese</th><th>Regime</th><th style="text-align:right">Incasso Lordo</th>
+      <th style="text-align:right">Netto Casa</th><th style="text-align:right">Riserva</th>
+      <th style="text-align:right">Accant. Tasse/INPS</th><th style="text-align:right">Cassa Cumulata</th>
+    </tr></thead>
+    <tbody id="monthsBody"></tbody>
+  </table></div>
+
+</div><!-- /dashboard -->
+
+
+<!-- ══════════════ VIEW: EDITOR ══════════════ -->
+<div class="view" id="view-editor">
+
+  <div class="stitle" style="margin-top:0">Parametri Fiscali Globali</div>
+  <div class="params-card">
+    <div class="params-grid">
+      <div class="param-item">
+        <label>Coeff. Redditività Forfettario</label>
+        <input type="number" id="p-coeff" value="78" min="1" max="100" step="1" oninput="onParamChange()"> 
+        <div class="computed-val" id="cv-coeff"></div>
+      </div>
+      <div class="param-item">
+        <label>Aliquota Imposta Sostitutiva (%)</label>
+        <input type="number" id="p-impff" value="5" min="1" max="100" step="0.5" oninput="onParamChange()">
+      </div>
+      <div class="param-item">
+        <label>INPS Gestione Separata (%)</label>
+        <input type="number" id="p-inps" value="26.23" min="1" max="50" step="0.01" oninput="onParamChange()">
+      </div>
+      <div class="param-item">
+        <label>Spese Deducibili Ordinario (%)</label>
+        <input type="number" id="p-spese" value="10" min="0" max="50" step="1" oninput="onParamChange()">
+      </div>
+    </div>
+    <div class="params-grid">
+      <div class="param-item"><label>Riserva mensile Anno 1 (€)</label><input type="number" id="r1" value="500" oninput="onParamChange()"></div>
+      <div class="param-item"><label>Riserva mensile Anno 2 (€)</label><input type="number" id="r2" value="500" oninput="onParamChange()"></div>
+      <div class="param-item"><label>Riserva mensile Anno 3 (€)</label><input type="number" id="r3" value="500" oninput="onParamChange()"></div>
+      <div class="param-item"><label>Riserva mensile Anno 4 (€)</label><input type="number" id="r4" value="600" oninput="onParamChange()"></div>
+      <div class="param-item"><label>Riserva mensile Anno 5 (€)</label><input type="number" id="r5" value="750" oninput="onParamChange()"></div>
+    </div>
+  </div>
+
+  <!-- EDITOR PER SCENARIO -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+    <div class="stitle" style="margin:0;border:none">Dati Scenario in Modifica →</div>
+    <div class="scenario-tabs" style="margin-left:0">
+      <button class="stab active-cons" onclick="setEditorScenario('cons')" id="estab-cons">📉 Conservativo</button>
+      <button class="stab" onclick="setEditorScenario('real')" id="estab-real">📊 Realistico</button>
+      <button class="stab" onclick="setEditorScenario('ott')" id="estab-ott">📈 Ottimistico</button>
+    </div>
+    <button class="reset-btn" onclick="resetCurrentScenario()">↺ Ripristina originale</button>
+  </div>
+
+  <div class="editor-grid" id="editorGrid">
+    <!-- Generato da JS -->
+  </div>
+
+</div><!-- /editor -->
+
+
+<script>
+const MESI_NOMI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const REGIME = ['ff','ff','ord','ord','ord'];
+const GIORNI_SETTIMANA = [4,4,5,5,5];
+
+// ── DEFAULTS (usati per reset) ──
+const DEFAULTS = {
+  cons: {
+    label:'Conservativo', color:'#38bdf8',
+    az1:[31900,31900,49500,49500,55000], az2:[33000,33000,39600,39600,39600],
+    az3:[0,0,25000,35000,45000], az4:[0,4500,7500,12750,12750],
+    az1_gg:[2.5,2.5,2.5,2.5,2.5], az1_sett:[44,44,44,44,44], az1_tar:[290,290,450,450,500],
+    az2_gg:[1.5,1.5,1.5,1.5,1.5], az2_sett:[44,44,44,44,44], az2_tar:[500,500,600,600,600],
+  },
+  real: {
+    label:'Realistico', color:'#22c77a',
+    az1:[34100,38500,44000,49500,49500], az2:[36300,36300,42900,42900,42900],
+    az3:[0,0,25000,35000,45000], az4:[0,4500,9000,12750,12750],
+    az1_gg:[2.5,2.5,2.5,2.5,2.5], az1_sett:[44,44,44,44,44], az1_tar:[310,350,400,450,450],
+    az2_gg:[1.5,1.5,1.5,1.5,1.5], az2_sett:[44,44,44,44,44], az2_tar:[550,550,650,650,650],
+  },
+  ott: {
+    label:'Ottimistico', color:'#a78bfa',
+    az1:[36300,44000,51700,51700,55000], az2:[38280,38280,44220,44220,44220],
+    az3:[0,0,25000,35000,45000], az4:[0,4500,9000,12750,12750],
+    az1_gg:[2.5,2.5,2.5,2.5,2.5], az1_sett:[44,44,44,44,44], az1_tar:[330,400,470,470,500],
+    az2_gg:[1.5,1.5,1.5,1.5,1.5], az2_sett:[44,44,44,44,44], az2_tar:[580,580,670,670,670],
+  }
+};
+
+// Deep clone dei defaults come stato corrente
+const SCENARI = JSON.parse(JSON.stringify(DEFAULTS));
+
+let currentSc = 'cons';
+let editorSc  = 'cons';
+
+// ── PARAMETRI FISCALI (letti da input) ──
+function getParams() {
+  return {
+    coeff:  parseFloat(document.getElementById('p-coeff')?.value||78) / 100,
+    impff:  parseFloat(document.getElementById('p-impff')?.value||5)  / 100,
+    inps:   parseFloat(document.getElementById('p-inps')?.value||26.23)/ 100,
+    spese:  parseFloat(document.getElementById('p-spese')?.value||10)  / 100,
+    riserva:[1,2,3,4,5].map(i => parseFloat(document.getElementById('r'+i)?.value||500)),
+  };
+}
+
+// ── CALCOLI FISCALI ──
+function irpef(reddito) {
+  let t = 0;
+  if (reddito<=15000)      t = reddito*0.23;
+  else if(reddito<=28000)  t = 15000*0.23+(reddito-15000)*0.25;
+  else if(reddito<=50000)  t = 15000*0.23+13000*0.25+(reddito-28000)*0.35;
+  else                     t = 15000*0.23+13000*0.25+22000*0.35+(reddito-50000)*0.43;
+  return t + reddito*0.02;
+}
+
+function calcFF(fat, p) {
+  const rimp = fat * p.coeff;
+  const imp  = rimp * p.impff;
+  const inps = rimp * p.inps;
+  const tot  = imp + inps;
+  return {rimp, imp, inps, tot, netto:fat-tot, pressione:tot/fat, tipo:'ff'};
+}
+
+function calcOrd(fat, p) {
+  const spese  = fat * p.spese;
+  const rLordo = fat - spese;
+  const inps   = rLordo * p.inps;
+  const rIrpef = rLordo - inps*0.5;
+  const irp    = irpef(rIrpef);
+  const tot    = inps + irp;
+  return {spese, rLordo, inps, irp, tot, netto:rLordo-tot, pressione_utile:tot/rLordo, tipo:'ord'};
+}
+
+function calcAnno(sc, annoIdx) {
+  const p   = getParams();
+  const fat = sc.az1[annoIdx]+sc.az2[annoIdx]+sc.az3[annoIdx]+sc.az4[annoIdx];
+  const r   = REGIME[annoIdx]==='ff' ? calcFF(fat,p) : calcOrd(fat,p);
+  return {...r, fat, netto_mese:r.netto/12};
+}
+
+// ── FORMAT ──
+function fmt(n) {
+  if(isNaN(n)||n===null) return '—';
+  return new Intl.NumberFormat('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}).format(Math.round(n))+' €';
+}
+function fmtPct(n){ return (n*100).toFixed(1)+'%'; }
+
+// ── VIEWS ──
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.navtab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  event.target.classList.add('active');
+  if(v==='editor') renderEditor();
+}
+
+// ── SCENARIO (dashboard) ──
+function setScenario(sc) {
+  currentSc = sc;
+  ['cons','real','ott'].forEach(s=>{
+    const b = document.getElementById('stab-'+s);
+    b.className = 'stab' + (s===sc ? ' active-'+s : '');
+  });
+  render();
+}
+
+// ── SCENARIO (editor) ──
+function setEditorScenario(sc) {
+  editorSc = sc;
+  ['cons','real','ott'].forEach(s=>{
+    const b = document.getElementById('estab-'+s);
+    b.className = 'stab' + (s===sc ? ' active-'+s : '');
+  });
+  renderEditor();
+}
+
+function resetCurrentScenario() {
+  if(!confirm(`Ripristinare i valori originali per lo scenario ${SCENARI[editorSc].label}?`)) return;
+  SCENARI[editorSc] = JSON.parse(JSON.stringify(DEFAULTS[editorSc]));
+  renderEditor();
+  render();
+}
+
+// ── EDITOR ──
+function renderEditor() {
+  const sc = SCENARI[editorSc];
+  const anni = ['Anno 1','Anno 2','Anno 3','Anno 4','Anno 5'];
+
+  const annoHeaders = anni.map((a,i)=>`<div class="anno-label">${a}</div>`).join('');
+
+  function annGrid(key, tipo='number', step=1, suffix='') {
+    return `<div class="anno-grid">${sc[key].map((v,i)=>`
+      <input type="${tipo}" step="${step}" value="${v}"
+        oninput="onScEdit('${key}',${i},this.value)"
+        id="ei-${key}-${i}"
+      >`).join('')}</div>`;
+  }
+
+  // Fatturato Az.1 e Az.2: calcolato da gg × sett × tariffa
+  function az12computed(az) {
+    return sc[az+'_gg'].map((g,i)=> Math.round(g * sc[az+'_sett'][i] * sc[az+'_tar'][i])).join(', ');
+  }
+
+  const html = `
+    <!-- AZ. 1 -->
+    <div class="edit-card">
+      <div class="edit-card-head"><span class="dot" style="background:#4f7fff"></span>🏢 Azienda 1 (ex attuale)</div>
+      <div class="edit-body">
+        <div class="field-label-row"><label>Giorni / Settimana</label></div>
+        <div class="anno-grid">${anni.map((_,i)=>`<div class="anno-label">A${i+1}</div>`).join('')}</div>
+        ${annGrid('az1_gg','number',0.5)}
+        <div class="sep"></div>
+        <div class="field-label-row"><label>Settimane Lavorate / Anno</label></div>
+        ${annGrid('az1_sett','number',1)}
+        <div class="sep"></div>
+        <div class="field-label-row"><label>Tariffa Giornaliera (€)</label></div>
+        ${annGrid('az1_tar','number',10)}
+        <div class="sep"></div>
+        <div class="field-label-row"><label style="color:var(--accent)">Fatturato Calcolato (€)</label></div>
+        <div class="anno-grid" id="az1-computed">
+          ${sc.az1.map((v,i)=>`<input type="number" step="100" value="${v}"
+            oninput="onAzDirectEdit('az1',${i},this.value)"
+            id="ei-az1-${i}" style="color:var(--accent)">`).join('')}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Puoi modificare direttamente oppure aggiornare gg/tariffa sopra</div>
+      </div>
+    </div>
+
+    <!-- AZ. 2 -->
+    <div class="edit-card">
+      <div class="edit-card-head"><span class="dot" style="background:#22c77a"></span>🤝 Azienda 2 (amico)</div>
+      <div class="edit-body">
+        <div class="field-label-row"><label>Giorni / Settimana</label></div>
+        <div class="anno-grid">${anni.map((_,i)=>`<div class="anno-label">A${i+1}</div>`).join('')}</div>
+        ${annGrid('az2_gg','number',0.5)}
+        <div class="sep"></div>
+        <div class="field-label-row"><label>Settimane Lavorate / Anno</label></div>
+        ${annGrid('az2_sett','number',1)}
+        <div class="sep"></div>
+        <div class="field-label-row"><label>Tariffa Giornaliera (€)</label></div>
+        ${annGrid('az2_tar','number',10)}
+        <div class="sep"></div>
+        <div class="field-label-row"><label style="color:var(--accent)">Fatturato Calcolato (€)</label></div>
+        <div class="anno-grid" id="az2-computed">
+          ${sc.az2.map((v,i)=>`<input type="number" step="100" value="${v}"
+            oninput="onAzDirectEdit('az2',${i},this.value)"
+            id="ei-az2-${i}" style="color:var(--accent)">`).join('')}
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">Puoi modificare direttamente oppure aggiornare gg/tariffa sopra</div>
+      </div>
+    </div>
+
+    <!-- AZ. 3 + SAAS -->
+    <div class="edit-card">
+      <div class="edit-card-head"><span class="dot" style="background:#f59e0b"></span>🏛️ Az.3 (Cooperativa) + 🚀 SaaS</div>
+      <div class="edit-body">
+        <div class="field-label-row"><label>🏛️ Fatturato Az.3 (€ / anno)</label></div>
+        <div class="anno-grid">${anni.map((_,i)=>`<div class="anno-label">A${i+1}</div>`).join('')}</div>
+        <div class="anno-grid">
+          ${sc.az3.map((v,i)=>`<input type="number" step="500" value="${v}"
+            oninput="onScEdit('az3',${i},this.value)" id="ei-az3-${i}">`).join('')}
+        </div>
+        <div class="sep"></div>
+        <div class="field-label-row"><label>🚀 Fatturato SaaS (€ / anno)</label></div>
+        <div class="anno-grid">
+          ${sc.az4.map((v,i)=>`<input type="number" step="250" value="${v}"
+            oninput="onScEdit('az4',${i},this.value)" id="ei-az4-${i}">`).join('')}
+        </div>
+        <div class="sep"></div>
+        <div class="field-label-row"><label style="color:var(--muted)">Totale Fatturato (auto)</label></div>
+        <div class="anno-grid" id="tot-row">
+          ${[0,1,2,3,4].map(i=>{
+            const tot = sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i];
+            return `<div style="font-size:12px;font-weight:700;color:var(--accent);text-align:center;padding:6px 0" id="tot-${i}">${fmt(tot)}</div>`;
+          }).join('')}
+        </div>
+        <div class="sep"></div>
+        <div style="font-size:11px;color:var(--muted)">
+          🔒 Vincolo FF: nei primi 2 anni Az.1 deve essere &lt;50% del totale.<br>
+          <span id="vincolo-status"></span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('editorGrid').innerHTML = html;
+  updateVincoloStatus();
+}
+
+// ── INPUT HANDLERS EDITOR ──
+function onScEdit(key, idx, val) {
+  const v = parseFloat(val) || 0;
+  SCENARI[editorSc][key][idx] = v;
+
+  // Se si modifica gg/sett/tariffa Az1 o Az2, ricalcola il fatturato
+  if (['az1_gg','az1_sett','az1_tar'].includes(key)) syncAzFat('az1');
+  if (['az2_gg','az2_sett','az2_tar'].includes(key)) syncAzFat('az2');
+
+  updateTotals();
+  updateVincoloStatus();
+  render();
+}
+
+function onAzDirectEdit(az, idx, val) {
+  const v = parseFloat(val) || 0;
+  SCENARI[editorSc][az][idx] = v;
+  updateTotals();
+  updateVincoloStatus();
+  render();
+}
+
+function syncAzFat(az) {
+  const sc = SCENARI[editorSc];
+  for(let i=0;i<5;i++) {
+    const computed = Math.round(sc[az+'_gg'][i] * sc[az+'_sett'][i] * sc[az+'_tar'][i]);
+    sc[az][i] = computed;
+    const inp = document.getElementById(`ei-${az}-${i}`);
+    if(inp) inp.value = computed;
+  }
+}
+
+function updateTotals() {
+  const sc = SCENARI[editorSc];
+  for(let i=0;i<5;i++) {
+    const tot = sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i];
+    const el = document.getElementById('tot-'+i);
+    if(el) el.textContent = fmt(tot);
+  }
+}
+
+function updateVincoloStatus() {
+  const sc = SCENARI[editorSc];
+  const el = document.getElementById('vincolo-status');
+  if(!el) return;
+  let msgs = [];
+  for(let i=0;i<2;i++) {
+    const tot = sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i];
+    const pct = tot>0 ? sc.az1[i]/tot : 0;
+    const ok = pct < 0.5;
+    msgs.push(`<span style="color:${ok?'var(--green)':'var(--red)'}">Anno ${i+1}: ${fmtPct(pct)} ${ok?'✅':'⚠️ VIOLA LIMITE'}</span>`);
+  }
+  el.innerHTML = msgs.join(' · ');
+}
+
+function onParamChange() {
+  const spesePct = parseFloat(document.getElementById('p-spese')?.value||10);
+  const el = document.getElementById('note-spese');
+  if(el) el.textContent = spesePct+'%';
+  render();
+  if(document.getElementById('vincolo-status')) updateVincoloStatus();
+}
+
+// ── RENDER DASHBOARD ──
+function render() {
+  const sc = SCENARI[currentSc];
+  document.getElementById('scLabel').textContent  = sc.label;
+  document.getElementById('scLabel2').textContent = 'Scenario '+sc.label;
+
+  checkVincolo50(sc);
+  renderKPI(sc);
+  renderFatturato(sc);
+  renderProspecto(sc);
+  renderDettaglio(sc);
+  renderQuotaChart(sc);
+  renderMonths(sc);
+}
+
+function checkVincolo50(sc) {
+  const w = document.getElementById('warning50');
+  const wt = document.getElementById('warning50text');
+  const viol = [];
+  for(let i=0;i<2;i++) {
+    const tot = sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i];
+    const pct = tot>0 ? sc.az1[i]/tot : 0;
+    if(pct>=0.5) viol.push(`Anno ${i+1}: Az.1 = ${fmtPct(pct)} del fatturato (limite: &lt;50%)`);
+  }
+  if(viol.length) {
+    w.classList.remove('hidden');
+    wt.innerHTML = '<strong>⚠️ Vincolo Regime Forfettario violato!</strong> In regime FF il fatturato verso l\'ex datore non può superare il 50% del totale.<br>'+viol.join('<br>');
+  } else {
+    w.classList.add('hidden');
+  }
+}
+
+function renderKPI(sc) {
+  const p = getParams();
+  const anni = [0,1,2,3,4].map(i=>calcAnno(sc,i));
+  const fatTot  = anni.reduce((s,a)=>s+a.fat,0);
+  const netTot  = anni.reduce((s,a)=>s+a.netto,0);
+  const riserva = p.riserva;
+  const nmA5   = anni[4].netto_mese;
+  const tot5   = sc.az1[4]+sc.az2[4]+sc.az3[4]+sc.az4[4];
+  const pctAz1 = tot5>0 ? sc.az1[4]/tot5 : 0;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi accent"><div class="kpi-label">Fatturato 5 anni</div><div class="kpi-value big">${fmt(fatTot)}</div><div class="kpi-sub">Lordo cumulato</div></div>
+    <div class="kpi green"><div class="kpi-label">Netto 5 anni</div><div class="kpi-value big">${fmt(netTot)}</div><div class="kpi-sub">Dopo tasse + INPS</div></div>
+    <div class="kpi green"><div class="kpi-label">Netto/mese Anno 5</div><div class="kpi-value">${fmt(nmA5)}</div><div class="kpi-sub">Spendibile: ${fmt(nmA5-riserva[4])}/m</div></div>
+    <div class="kpi orange"><div class="kpi-label">Fatturato Anno 5</div><div class="kpi-value big">${fmt(anni[4].fat)}</div><div class="kpi-sub">Regime Ordinario</div></div>
+    <div class="kpi ${pctAz1>=0.5?'red':'purple'}"><div class="kpi-label">% Az.1 Anno 5</div><div class="kpi-value">${fmtPct(pctAz1)}</div><div class="kpi-sub">${pctAz1>=0.5?'⚠️ Supera limite FF':'✅ OK (Anni 3-5 solo indicativo)'}</div></div>
+  `;
+}
+
+function renderFatturato(sc) {
+  const clienti = [
+    {nome:'🏢 Azienda 1 (ex attuale)', key:'az1', vincolo:true},
+    {nome:'🤝 Azienda 2 (amico)',       key:'az2'},
+    {nome:'🏛️ Azienda 3 (cooperativa)',key:'az3'},
+    {nome:'🚀 Prodotto SaaS',           key:'az4'},
+  ];
+  let html='';
+  for(const c of clienti) {
+    html+=`<tr><td><strong>${c.nome}</strong></td>`;
+    for(let i=0;i<5;i++) {
+      let extra='';
+      if(c.vincolo && REGIME[i]==='ff') {
+        const tot=sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i];
+        const pct=tot>0?sc.az1[i]/tot:0;
+        extra=` <span class="badge ${pct<0.5?'badge-ok':'badge-ko'}">${fmtPct(pct)}</span>`;
+      }
+      html+=`<td>${fmt(sc[c.key][i])}${extra}</td>`;
+    }
+    html+='</tr>';
+  }
+  html+=`<tr class="row-total"><td>TOTALE FATTURATO</td>`;
+  for(let i=0;i<5;i++) html+=`<td>${fmt(sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i])}</td>`;
+  html+=`</tr><tr class="row-muted"><td>Regime</td>`;
+  for(let i=0;i<5;i++) html+=`<td>${REGIME[i]==='ff'?'<span class="badge badge-ff">Forfettario 5%</span>':'<span class="badge badge-ord">Ordinario</span>'}</td>`;
+  html+='</tr>';
+  document.getElementById('fatturatoBody').innerHTML=html;
+}
+
+function renderProspecto(sc) {
+  const p = getParams();
+  const anni = [0,1,2,3,4].map(i=>calcAnno(sc,i));
+  const rows = [
+    {label:'Fatturato Lordo', fn:a=>fmt(a.fat), cls:'row-total'},
+    {label:'Spese deducibili', fn:a=>a.tipo==='ff'?'—':`- ${fmt(a.spese)}`, cls:'row-muted'},
+    {label:'Reddito Imponibile / Utile', fn:a=>a.tipo==='ff'?fmt(a.rimp):fmt(a.rLordo), cls:''},
+    {label:'INPS Gest. Separata', fn:a=>`- ${fmt(a.inps)}`, cls:'row-tasse'},
+    {label:'Imposta (FF 5% / IRPEF+Add.)', fn:a=>a.tipo==='ff'?`- ${fmt(a.imp)}`:`- ${fmt(a.irp)}`, cls:'row-tasse'},
+    {label:'Totale Tasse + INPS', fn:a=>`- ${fmt(a.tot)}`, cls:'row-tasse'},
+    {label:'Pressione Fiscale', fn:a=>a.tipo==='ff'?`${fmtPct(a.pressione)} lordo`:`${fmtPct(a.pressione_utile)} utile`, cls:'row-warn'},
+    {label:'NETTO ANNO', fn:a=>fmt(a.netto), cls:'row-netto'},
+    {label:'Netto / Mese', fn:a=>`≈ ${fmt(a.netto_mese)}`, cls:'row-netto'},
+    {label:'Riserva mensile', fn:(a,i)=>`- ${fmt(p.riserva[i])} / m`, cls:'row-muted'},
+    {label:'NETTO SPENDIBILE / MESE', fn:(a,i)=>`≈ ${fmt(a.netto_mese-p.riserva[i])}`, cls:'row-netto'},
+  ];
+  let html='';
+  for(const r of rows) {
+    html+=`<tr class="${r.cls}"><td>${r.label}</td>`;
+    for(let i=0;i<5;i++) html+=`<td>${r.fn(anni[i],i)}</td>`;
+    html+='</tr>';
+  }
+  document.getElementById('prospectoBody').innerHTML=html;
+}
+
+function renderDettaglio(sc) {
+  const rows=[
+    {label:'🏢 Az.1 · gg/sett', fn:(s,i)=>s.az1_gg[i]},
+    {label:'🏢 Az.1 · settimane', fn:(s,i)=>s.az1_sett[i]},
+    {label:'🏢 Az.1 · tariffa/g', fn:(s,i)=>s.az1_tar[i]+' €'},
+    {label:'🏢 Az.1 · totale', fn:(s,i)=>fmt(s.az1[i])},
+    {label:'🤝 Az.2 · gg/sett', fn:(s,i)=>s.az2_gg[i]},
+    {label:'🤝 Az.2 · tariffa/g', fn:(s,i)=>s.az2_tar[i]+' €'},
+    {label:'🤝 Az.2 · totale', fn:(s,i)=>fmt(s.az2[i])},
+  ];
+  let html='';
+  for(const r of rows) {
+    const sep=r.label.includes('Az.2 · gg');
+    html+=`<tr${sep?' style="border-top:1px solid var(--border)"':''}><td>${r.label}</td>`;
+    for(let i=0;i<5;i++) html+=`<td>${r.fn(sc,i)}</td>`;
+    html+='</tr>';
+  }
+  document.getElementById('dettaglioBody').innerHTML=html;
+}
+
+function renderQuotaChart(sc) {
+  let html='<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Az.1 deve restare sotto 50% nei primi 2 anni (regime FF). Anni 3-5: solo indicativo.</div>';
+  for(let i=0;i<5;i++){
+    const tot=sc.az1[i]+sc.az2[i]+sc.az3[i]+sc.az4[i];
+    const pct=tot>0?sc.az1[i]/tot:0;
+    const isFF=REGIME[i]==='ff';
+    const col=isFF?(pct>=0.5?'#ef4444':'#22c77a'):'#4f7fff';
+    html+=`<div class="bar-row">
+      <div class="bar-label" style="color:${col}">Anno ${i+1} ${isFF?'🔒':''}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.min(pct*100,100)}%;background:${col}">${fmtPct(pct)}</div>
+        <div style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(239,68,68,.4);pointer-events:none"></div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('quotaChart').innerHTML=html;
+}
+
+function renderMonths(sc) {
+  const p = getParams();
+  const anni=[0,1,2,3,4].map(i=>calcAnno(sc,i));
+  let html='';
+  let cassa=0;
+  for(let anno=0;anno<5;anno++){
+    const a=anni[anno];
+    const fat=sc.az1[anno]+sc.az2[anno]+sc.az3[anno]+sc.az4[anno];
+    const lordo_m=a.fat/12;
+    const netto_m=a.netto_mese;
+    const riserva=p.riserva[anno];
+    const regime=REGIME[anno];
+    const f24_giu=a.tot*0.65;
+    const f24_nov=a.tot*0.35;
+    const accont_n=a.tot/12;
+    const badge=regime==='ff'?'<span class="badge badge-ff">Forfettario</span>':'<span class="badge badge-ord">Ordinario</span>';
+    html+=`<tr class="year-row" onclick="toggleYear(${anno+1})">
+      <td colspan="7">📁 ANNO ${anno+1} — ${regime==='ff'?'Regime Forfettario':'Regime Ordinario'} · ${fmt(fat)} · ${GIORNI_SETTIMANA[anno]} gg/sett</td>
+    </tr>`;
+    for(let m=0;m<12;m++){
+      const mNum=anno*12+m+1;
+      const isGiu=m===5, isNov=m===10;
+      let accant;
+      if(isGiu)      { accant=-f24_giu; cassa+=(lordo_m-netto_m-riserva+accant); }
+      else if(isNov) { accant=-f24_nov; cassa+=(lordo_m-netto_m-riserva+accant); }
+      else           { accant=accont_n;  cassa+=(lordo_m-netto_m-riserva-accant); }
+      const aLabel=(isGiu||isNov)
+        ?`<span style="color:var(--red)">- ${fmt(Math.abs(accant))} F24</span>`
+        :`+ ${fmt(accant)}`;
+      html+=`<tr class="month-row y${anno+1} ${(isGiu||isNov)?'alert-month':''}">
+        <td>M${mNum} (${MESI_NOMI[m]})${(isGiu||isNov)?' 🚨':''}</td>
+        <td>${badge}</td><td>${fmt(lordo_m)}</td><td>${fmt(netto_m)}</td>
+        <td>- ${fmt(riserva)}</td><td>${aLabel}</td>
+        <td><strong>${cassa>=0?'+':''} ${fmt(Math.abs(cassa))}</strong></td>
+      </tr>`;
+    }
+    html+=`<tr class="year-total-row">
+      <td colspan="2">TOTALE ANNO ${anno+1}</td><td>${fmt(fat)}</td><td>${fmt(a.netto)}</td>
+      <td>- ${fmt(riserva*12)}</td><td>- ${fmt(a.tot)}</td>
+      <td style="color:var(--accent)">+ ${fmt(cassa)}</td>
+    </tr>`;
+  }
+  document.getElementById('monthsBody').innerHTML=html;
+}
+
+function toggleYear(y){
+  document.querySelectorAll('.y'+y).forEach(r=>r.classList.toggle('hidden'));
+}
+function toggleAll(){
+  const rows=document.querySelectorAll('.month-row');
+  const anyVis=Array.from(rows).some(r=>!r.classList.contains('hidden'));
+  rows.forEach(r=>anyVis?r.classList.add('hidden'):r.classList.remove('hidden'));
+}
+
+// INIT
+render();
+</script>
+</body>
+</html>

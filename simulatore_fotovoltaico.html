@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulatore Fotovoltaico</title>
+<style>
+:root {
+  --sun:#E8A020;--sun-light:#FDF3E0;--sun-dark:#B87818;
+  --green:#2D7D4F;--green-light:#EAF4EE;--green-dark:#1A5235;
+  --blue:#1E6FA8;--blue-light:#E8F3FB;
+  --gray-50:#F8F7F4;--gray-100:#EEECEA;--gray-200:#D8D6D0;
+  --gray-300:#B8B6B0;--gray-400:#9A9890;--gray-500:#6B6966;--gray-700:#3D3C3A;--gray-900:#1A1918;
+  --red:#C0392B;--red-light:#FBEAE8;--amber:#D4700A;--amber-light:#FDF0E0;
+  --radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:14px;line-height:1.5;}
+
+/* HEADER */
+.header{background:#fff;border-bottom:1px solid var(--gray-200);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.logo-sun{width:32px;height:32px;background:var(--sun-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.header-title{font-size:15px;font-weight:600;}
+.header-subtitle{font-size:12px;color:var(--gray-500);}
+
+/* PLANT TABS */
+.plant-bar{background:#fff;border-bottom:1px solid var(--gray-200);padding:0 24px;display:flex;}
+.plant-tab{padding:14px 20px;font-size:13px;font-weight:500;color:var(--gray-500);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;}
+.plant-tab:hover{color:var(--gray-900);}
+.plant-tab.active{color:var(--sun-dark);border-bottom-color:var(--sun);}
+
+/* LAYOUT */
+.main{display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 97px);overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{background:#fff;border-right:1px solid var(--gray-200);overflow-y:auto;}
+.sidebar-section{border-bottom:1px solid var(--gray-100);}
+.sidebar-section-header{padding:14px 20px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);display:flex;align-items:center;gap:6px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--sun);}
+
+.field{padding:7px 20px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;}
+.field-label{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--gray-700);}
+.field-controls{display:flex;align-items:center;gap:6px;}
+.field input[type="number"],.field select{width:90px;padding:5px 8px;border:1px solid var(--gray-200);border-radius:var(--radius);font-size:13px;color:var(--gray-900);background:#fff;text-align:right;}
+.field input[type="number"]:focus,.field select:focus{outline:none;border-color:var(--sun);box-shadow:0 0 0 2px rgba(232,160,32,.15);}
+.field select{width:130px;text-align:left;}
+.field-unit{font-size:11px;color:var(--gray-500);white-space:nowrap;min-width:38px;}
+
+.field-computed{padding:6px 12px;margin:0 12px 6px;background:var(--gray-50);border-radius:6px;display:flex;justify-content:space-between;align-items:center;}
+.field-computed .lbl{font-size:12px;color:var(--gray-500);}
+.field-computed .val{font-size:13px;font-weight:700;}
+
+.field-check{padding:7px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.field-check .field-label{font-size:13px;color:var(--gray-700);}
+
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-slider{position:absolute;inset:0;background:var(--gray-200);border-radius:10px;cursor:pointer;transition:background .2s;}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle input:checked+.toggle-slider{background:var(--green);}
+.toggle input:checked+.toggle-slider:before{transform:translateX(16px);}
+
+/* TOOLTIP BUTTON */
+.tip-btn{width:16px;height:16px;border-radius:50%;border:1px solid var(--gray-300);background:#fff;color:var(--gray-500);font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;}
+.tip-btn:hover{border-color:var(--sun);color:var(--sun-dark);background:var(--sun-light);}
+
+/* TOOLTIP POPUP — fixed, always in viewport */
+#tooltipBox{
+  display:none;
+  position:fixed;
+  width:300px;
+  max-height:80vh;
+  overflow-y:auto;
+  background:var(--gray-900);
+  color:#fff;
+  border-radius:10px;
+  padding:14px 16px;
+  font-size:12px;
+  line-height:1.6;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  z-index:9999;
+}
+#tooltipBox .tip-title{font-weight:600;font-size:13px;margin-bottom:6px;color:#fff;}
+#tooltipBox .tip-text{color:rgba(255,255,255,.85);white-space:pre-wrap;}
+#tooltipBox .tip-ref{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:11px;color:rgba(255,255,255,.55);}
+#tooltipBox .tip-warn{margin-top:8px;padding:6px 8px;background:rgba(212,112,10,.25);border-radius:5px;font-size:11px;color:#FFBA5A;}
+#tooltipBox .tip-close{position:absolute;top:8px;right:10px;cursor:pointer;font-size:14px;color:rgba(255,255,255,.5);background:none;border:none;padding:0;}
+#tooltipBox .tip-close:hover{color:#fff;}
+.metodo-card{background:#fff;border:1px solid var(--gray-200);border-radius:12px;margin-bottom:16px;overflow:hidden;}
+.metodo-title{padding:14px 20px;font-size:14px;font-weight:600;color:var(--gray-900);border-bottom:1px solid var(--gray-100);background:var(--gray-50);}
+.metodo-body{padding:16px 20px;font-size:13px;color:var(--gray-700);line-height:1.6;}
+.metodo-body p{margin-bottom:12px;}
+.metodo-table-wrap{overflow-x:auto;margin:12px 0;}
+.metodo-table{width:100%;border-collapse:collapse;font-size:12px;}
+.metodo-table thead th{padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-500);background:var(--gray-50);border-bottom:2px solid var(--gray-200);white-space:nowrap;}
+.metodo-table tbody td{padding:8px 12px;border-bottom:1px solid var(--gray-100);vertical-align:top;}
+.metodo-table tbody tr:last-child td{border-bottom:none;}
+.metodo-table tbody tr:hover{background:var(--gray-50);}
+.metodo-note{margin-top:12px;padding:10px 14px;background:var(--blue-light);border:1px solid rgba(30,111,168,.15);border-radius:6px;font-size:12px;color:var(--blue);line-height:1.6;}
+.metodo-list{margin:0;padding-left:20px;}
+.metodo-list li{margin-bottom:8px;font-size:13px;}
+
+/* CONTENT */
+.content{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.kpi-card{background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:14px 16px;}
+.kpi-label{font-size:11px;color:var(--gray-500);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+.kpi-value{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+.kpi-value.pos{color:var(--green);}
+.kpi-value.neg{color:var(--red);}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 12px 10px;}
+.profile-btn{padding:7px 8px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;cursor:pointer;font-size:11px;text-align:center;color:var(--gray-700);transition:all .15s;line-height:1.3;width:100%;}
+.profile-btn:hover{border-color:var(--sun);color:var(--sun-dark);}
+.profile-btn.selected{border-color:var(--sun);background:var(--sun-light);color:var(--sun-dark);font-weight:600;}
+.profile-label{font-size:11px;color:var(--gray-500);padding:6px 20px 4px;font-weight:600;}
+.calc-badge{display:inline-block;font-size:10px;padding:1px 5px;background:var(--green-light);color:var(--green-dark);border-radius:4px;margin-left:4px;font-weight:600;}
+.kwh-badge{display:inline-block;font-size:10px;padding:1px 5px;background:var(--blue-light);color:var(--blue);border-radius:4px;margin-left:2px;white-space:nowrap;}
+.kpi-value.warn{color:var(--amber);}
+.kpi-sub{font-size:11px;color:var(--gray-500);margin-top:2px;}
+
+/* ALERT */
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:12px;line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
+.alert-warn{background:var(--amber-light);color:var(--amber);border:1px solid rgba(212,112,10,.2);}
+.alert-info{background:var(--blue-light);color:var(--blue);border:1px solid rgba(30,111,168,.2);}
+
+/* CHART CARD */
+.chart-card{background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:20px;}
+.chart-title{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:2px;}
+.chart-subtitle{font-size:12px;color:var(--gray-500);margin-bottom:14px;}
+.legend-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-500);}
+.legend-dot{width:10px;height:10px;border-radius:2px;}
+
+/* SUMMARY */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.summary-section{background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:16px;}
+.summary-section h4{font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.summary-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-100);font-size:12px;}
+.summary-row:last-child{border-bottom:none;}
+.summary-row .lbl{color:var(--gray-500);}
+.summary-row .val{font-weight:500;}
+.summary-row .val.pos{color:var(--green);}
+.summary-row .val.neg{color:var(--red);}
+
+/* TABLE */
+.table-card{background:#fff;border:1px solid var(--gray-200);border-radius:12px;}
+.table-head{padding:14px 16px;border-bottom:1px solid var(--gray-100);font-size:13px;font-weight:600;color:var(--gray-700);display:flex;align-items:center;justify-content:space-between;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{padding:8px 10px;text-align:right;font-size:11px;font-weight:600;color:var(--gray-500);background:var(--gray-50);border-bottom:1px solid var(--gray-100);white-space:nowrap;}
+thead th:first-child{text-align:center;}
+.th-wrap{display:inline-flex;align-items:center;gap:4px;justify-content:flex-end;}
+.th-tip{width:14px;height:14px;font-size:9px;flex-shrink:0;}
+tbody td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--gray-100);color:var(--gray-700);}
+tbody td:first-child{text-align:center;font-weight:600;color:var(--gray-900);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--gray-50);}
+tr.row-incend{background:rgba(232,160,32,.06);}
+tr.row-rev{background:rgba(30,111,168,.06);}
+tr.row-pdc{background:rgba(212,112,10,.06);}
+.pos-cell{color:var(--green);font-weight:500;}
+.neg-cell{color:var(--red);}
+.dim-cell{color:var(--gray-400);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="logo-sun">☀️</div>
+    <div><div class="header-title">Simulatore Fotovoltaico</div><div class="header-subtitle">Analisi economica impianti</div></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span style="font-size:12px;color:var(--gray-500);">Configurazione:</span>
+    <input id="configName" type="text" placeholder="es. Parrocchia di Villafranca di Verona" style="border:1px solid var(--gray-200);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;width:240px;outline:none;">
+  </div>
+</div>
+
+<div class="plant-bar">
+  <div class="plant-tab active" onclick="setPlant('opere')">🏛️ Opere parrocchiali</div>
+  <div class="plant-tab" onclick="setPlant('materna')">🏫 Materna</div>
+  <div class="plant-tab" onclick="setPlant('entrambi')">⚡ Entrambi gli impianti</div>
+  <div class="plant-tab" onclick="setPlant('unificato')">🔌 POD unico aggregato</div>
+  <div style="flex:1;"></div>
+  <div class="plant-tab" onclick="showPage('metodologia')" id="tab-metodologia">📋 Note metodologiche</div>
+</div>
+
+<div class="main" id="mainPage">
+<div class="sidebar">
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Sito e tetto</div>
+    <div class="field"><div class="field-label">Tipo di tetto<button class="tip-btn" onclick="tip(this,'tetto')">?</button></div><div class="field-controls"><select id="roofType" onchange="calc()"><option value="6.5">Falda</option><option value="10">Piano</option></select></div></div>
+    <div class="field"><div class="field-label">Superficie<button class="tip-btn" onclick="tip(this,'superficie')">?</button></div><div class="field-controls"><input type="number" id="surface" value="165" min="10" max="2000" step="5" oninput="calc()"><span class="field-unit">m²</span></div></div>
+    <div class="field"><div class="field-label">Esposizione<button class="tip-btn" onclick="tip(this,'esposizione')">?</button></div><div class="field-controls"><select id="orientation" onchange="calc()"><option value="1150">Sud</option><option value="950">Est/Ovest</option><option value="700">Nord</option></select></div></div>
+    <div class="field-computed"><span class="lbl">Potenza installabile</span><span class="val" id="potInstallabile" style="color:var(--sun-dark);">–</span></div>
+    <div class="field"><div class="field-label">Potenza installata</div><div class="field-controls"><input type="number" id="potInstallata" value="25" min="1" max="1000" step="1" oninput="calc()"><span class="field-unit">kWp</span></div></div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Consumi elettrici</div>
+    <div class="field"><div class="field-label">Consumo POD impianto<button class="tip-btn" onclick="tip(this,'consumoPOD')">?</button></div><div class="field-controls"><input type="number" id="consumoPOD" value="10526" min="0" max="500000" step="100" oninput="calc()"><span class="field-unit">kWh/a</span></div></div>
+    <div class="field"><div class="field-label">Costo bolletta POD</div><div class="field-controls"><input type="number" id="costoPOD" value="4000" min="0" max="500000" step="100" oninput="calc()"><span class="field-unit">€/a</span></div></div>
+    <div class="field"><div class="field-label">Consumo altri POD<button class="tip-btn" onclick="tip(this,'altriPOD')">?</button></div><div class="field-controls"><input type="number" id="consumoAltri" value="23684" min="0" max="500000" step="100" oninput="calc()"><span class="field-unit">kWh/a</span></div></div>
+    <div class="field"><div class="field-label">Costo altri POD</div><div class="field-controls"><input type="number" id="costoAltri" value="9000" min="0" max="500000" step="100" oninput="calc()"><span class="field-unit">€/a</span></div></div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Prezzi e incentivi</div>
+    <div class="field"><div class="field-label">Prezzo energia<button class="tip-btn" onclick="tip(this,'prezzoEnergia')">?</button></div><div class="field-controls"><input type="number" id="prezzoEnergia" value="0.38" min="0.05" max="1" step="0.01" oninput="calc()"><span class="field-unit">€/kWh</span></div></div>
+    <div class="field"><div class="field-label">Inflazione energetica<button class="tip-btn" onclick="tip(this,'inflEnergia')">?</button></div><div class="field-controls"><input type="number" id="inflEnergia" value="3.0" min="0" max="15" step="0.1" oninput="calc()"><span class="field-unit">%/a</span></div></div>
+    <div class="field"><div class="field-label">Tariffa premio GSE<button class="tip-btn" onclick="tip(this,'tariffaPremio')">?</button></div><div class="field-controls"><input type="number" id="tariffaPremio" value="0.12" min="0" max="0.2" step="0.005" oninput="calc()"><span class="field-unit">€/kWh</span></div></div>
+    <div class="field"><div class="field-label">Maggiorazione Nord<button class="tip-btn" onclick="tip(this,'maggiorazioneNord')">?</button></div><div class="field-controls"><input type="number" id="maggiNord" value="0.01" min="0" max="0.05" step="0.001" oninput="calc()"><span class="field-unit">€/kWh</span></div></div>
+    <div class="field"><div class="field-label">Corrispettivo ARERA<button class="tip-btn" onclick="tip(this,'arera')">?</button></div><div class="field-controls"><input type="number" id="corrARERA" value="0.01" min="0" max="0.05" step="0.001" oninput="calc()"><span class="field-unit">€/kWh</span></div></div>
+    <div class="field"><div class="field-label">Prezzo RID<button class="tip-btn" onclick="tip(this,'rid')">?</button></div><div class="field-controls"><input type="number" id="prezzoRID" value="0.11" min="0" max="0.3" step="0.005" oninput="calc()"><span class="field-unit">€/kWh</span></div></div>
+    <div class="field"><div class="field-label">Durata incentivi GSE<button class="tip-btn" onclick="tip(this,'durataIncentivi')">?</button></div><div class="field-controls"><input type="number" id="durataInc" value="20" min="1" max="30" step="1" oninput="calc()"><span class="field-unit">anni</span></div></div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Profili di consumo</div>
+    <div class="profile-label">POD impianto (opere) <button class="tip-btn" onclick="tip(this,'profiloPOD')">?</button></div>
+    <div class="profile-grid">
+      <button class="profile-btn selected" data-pod="pod1" data-profile="serale" onclick="setProfile('pod1','serale',this)">🌙 Serale<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">chiesa, sala</span></button>
+      <button class="profile-btn" data-pod="pod1" data-profile="mattina" onclick="setProfile('pod1','mattina',this)">🌅 Mattina+sera<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">ufficio parrocch.</span></button>
+      <button class="profile-btn" data-pod="pod1" data-profile="diurno" onclick="setProfile('pod1','diurno',this)">☀️ Diurno<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">scuola materna</span></button>
+      <button class="profile-btn" data-pod="pod1" data-profile="uniforme" onclick="setProfile('pod1','uniforme',this)">🔄 Uniforme<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">mix generico</span></button>
+    </div>
+    <div class="profile-label">Altri POD (canonica + altri) <button class="tip-btn" onclick="tip(this,'profiloAltri')">?</button></div>
+    <div class="profile-grid">
+      <button class="profile-btn" data-pod="pod2" data-profile="serale" onclick="setProfile('pod2','serale',this)">🌙 Serale<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">chiesa, sala</span></button>
+      <button class="profile-btn" data-pod="pod2" data-profile="mattina" onclick="setProfile('pod2','mattina',this)">🌅 Mattina+sera<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">ufficio parrocch.</span></button>
+      <button class="profile-btn" data-pod="pod2" data-profile="diurno" onclick="setProfile('pod2','diurno',this)">☀️ Diurno<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">scuola materna</span></button>
+      <button class="profile-btn selected" data-pod="pod2" data-profile="uniforme" onclick="setProfile('pod2','uniforme',this)">🔄 Uniforme<br><span style="color:var(--gray-400);font-weight:400;font-size:10px;">mix generico</span></button>
+    </div>
+    <div class="sidebar-section-header" style="padding-top:10px;"><span class="dot"></span>Autoconsumo <span class="calc-badge">calcolato</span></div>
+    <div style="margin:0 12px 8px;padding:7px 10px;background:var(--gray-50);border-radius:6px;font-size:11px;color:var(--gray-500);">Calcolati dai profili. Modificabili manualmente se hai dati più precisi.</div>
+    <div class="field"><div class="field-label">Autoconsumo fisico<button class="tip-btn" onclick="tip(this,'fisico')">?</button></div><div class="field-controls"><input type="number" id="fisico" value="8" min="0" max="100" step="1" oninput="calc()"><span class="field-unit">%</span><span class="kwh-badge" id="fisicoKwh">–</span></div></div>
+    <div class="field"><div class="field-label">Autoconsumo virtuale<button class="tip-btn" onclick="tip(this,'virtuale')">?</button></div><div class="field-controls"><input type="number" id="virtuale" value="55" min="0" max="100" step="1" oninput="calc()"><span class="field-unit">%</span><span class="kwh-badge" id="virtualeKwh">–</span></div></div>
+    <div class="field"><div class="field-label">Vendita RID (calcolata)</div><div style="display:flex;align-items:center;gap:6px;"><div style="font-size:13px;font-weight:600;color:var(--gray-700);" id="ridDisplay">37%</div><span class="kwh-badge" id="ridKwh">–</span></div></div>
+    <div class="field-check">
+      <div class="field-label">Batterie di accumulo<button class="tip-btn" onclick="tip(this,'batterie')">?</button></div>
+      <label class="toggle"><input type="checkbox" id="hasBatt" onchange="toggleBatt()"><span class="toggle-slider"></span></label>
+    </div>
+    <div id="battSection" style="display:none;">
+      <div class="field"><div class="field-label">Fisico con batterie <span class="calc-badge">calcolato</span></div><div class="field-controls"><input type="number" id="fisicoBatt" value="60" min="0" max="100" step="1" oninput="calc()"><span class="field-unit">%</span><span class="kwh-badge" id="fisicoBattKwh">–</span></div></div>
+      <div class="field"><div class="field-label">Virtuale con batterie</div><div class="field-controls"><input type="number" id="virtualeBatt" value="20" min="0" max="100" step="1" oninput="calc()"><span class="field-unit">%</span><span class="kwh-badge" id="virtualeBattKwh">–</span></div></div>
+      <div class="field"><div class="field-label">Capacità accumulo<button class="tip-btn" onclick="tip(this,'capacitaBatt')">?</button></div><div class="field-controls"><input type="number" id="capacitaBatt" value="37.5" min="5" max="500" step="2.5" oninput="calc()"><span class="field-unit">kWh</span></div></div>
+      <div class="field"><div class="field-label">Costo per modulo (5 kWh)</div><div class="field-controls"><input type="number" id="costoModulo" value="3000" min="500" max="10000" step="100" oninput="calc()"><span class="field-unit">€/mod.</span></div></div>
+      <div class="field-computed"><span class="lbl">Moduli / costo accumulo</span><span class="val" id="battInfo" style="color:var(--blue);">–</span></div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Costi impianto</div>
+    <div class="field"><div class="field-label">Materiali<button class="tip-btn" onclick="tip(this,'costoMat')">?</button></div><div class="field-controls"><input type="number" id="costoMat" value="1050" min="500" max="3000" step="50" oninput="calc()"><span class="field-unit">€/kWp</span></div></div>
+    <div class="field"><div class="field-label">Installazione</div><div class="field-controls"><input type="number" id="costoInst" value="400" min="200" max="1500" step="50" oninput="calc()"><span class="field-unit">€/kWp</span></div></div>
+    <div class="field"><div class="field-label">Progettazione/pratiche</div><div class="field-controls"><input type="number" id="costoProg" value="200" min="50" max="500" step="25" oninput="calc()"><span class="field-unit">€/kWp</span></div></div>
+    <div class="field"><div class="field-label">IVA<button class="tip-btn" onclick="tip(this,'iva')">?</button></div><div class="field-controls"><input type="number" id="ivaPerc" value="10" min="0" max="22" step="1" oninput="calc()"><span class="field-unit">%</span></div></div>
+    <div class="field-computed"><span class="lbl">Costo totale impianto</span><span class="val" id="costoTotDisplay" style="color:var(--gray-900);">–</span></div>
+    <div class="field-computed"><span class="lbl">di cui €/kWp installato (IVA incl.)</span><span class="val" id="costoKwpDisplay" style="color:var(--gray-500);">–</span></div>
+    <div class="field">
+      <div class="field-label">Modalità copertura costo<button class="tip-btn" onclick="tip(this,'finanziato')">?</button></div>
+      <div class="field-controls">
+        <select id="modalitaCosto" onchange="toggleFinanziamento()" style="width:160px;">
+          <option value="proprio">💰 Fondi propri</option>
+          <option value="donazioni">🙏 Donazioni/raccolta</option>
+          <option value="finanziato">🏦 Finanziamento</option>
+        </select>
+      </div>
+    </div>
+    <div id="donazioniNote" style="display:none;margin:0 12px 8px;padding:10px 12px;background:var(--green-light);border-radius:6px;border:1px solid rgba(45,125,79,.2);">
+      <div style="font-size:12px;color:var(--green-dark);font-weight:600;">🙏 Costo coperto dalla comunità parrocchiale</div>
+      <div style="font-size:11px;color:var(--green-dark);margin-top:3px;">Il costo dell'impianto non grava sul bilancio della parrocchia. Il cash flow parte da €0 e il beneficio è immediato dal primo anno.</div>
+    </div>
+    <div id="finanziamentoSection" style="display:none;">
+      <div class="field"><div class="field-label">Capitale finanziato<button class="tip-btn" onclick="tip(this,'capitaleFinanziato')">?</button></div><div class="field-controls"><input type="number" id="capitaleFinanziato" value="45000" min="1000" max="500000" step="500" oninput="calcRata()"><span class="field-unit">€</span></div></div>
+      <div class="field"><div class="field-label">Tasso annuo (TAN)<button class="tip-btn" onclick="tip(this,'tassoFin')">?</button></div><div class="field-controls"><input type="number" id="tassoFin" value="4.0" min="0" max="15" step="0.1" oninput="calcRata()"><span class="field-unit">%</span></div></div>
+      <div class="field"><div class="field-label">Durata finanziamento</div><div class="field-controls"><input type="number" id="durataFin" value="15" min="1" max="30" step="1" oninput="calcRata()"><span class="field-unit">anni</span></div></div>
+      <div class="field-computed"><span class="lbl">Rata annua calcolata</span><span class="val" id="rataAnnuaDisplay" style="color:var(--blue);">–</span></div>
+      <div class="field-computed"><span class="lbl">Totale restituito</span><span class="val" id="totRestituito" style="color:var(--gray-700);">–</span></div>
+      <div class="field-computed"><span class="lbl">Totale interessi pagati</span><span class="val" id="totInteressi" style="color:var(--red);">–</span></div>
+      <div style="margin:0 12px 8px;padding:8px 10px;background:var(--amber-light);border-radius:6px;border:1px solid rgba(212,112,10,.2);font-size:11px;color:var(--amber);">⚠️ Attenzione PNRR: se la parrocchia accede a contributi in conto capitale &gt;40%, la tariffa premio GSE si riduce del 50%.</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Costi operativi annui</div>
+    <div class="field"><div class="field-label">Manutenzione/lavaggio<button class="tip-btn" onclick="tip(this,'manutenzione')">?</button></div><div class="field-controls"><input type="number" id="costoManut" value="800" min="0" max="5000" step="50" oninput="calc()"><span class="field-unit">€/a</span></div></div>
+    <div class="field"><div class="field-label">Gestione GSE/pratiche</div><div class="field-controls"><input type="number" id="costoGSE" value="500" min="0" max="2000" step="50" oninput="calc()"><span class="field-unit">€/a</span></div></div>
+    <div class="field"><div class="field-label">Assicurazione All-Risk<button class="tip-btn" onclick="tip(this,'assicurazione')">?</button></div><div class="field-controls"><input type="number" id="costoAssic" value="300" min="0" max="2000" step="50" oninput="calc()"><span class="field-unit">€/a</span></div></div>
+    <div class="field"><div class="field-label">Inflazione costi op.<button class="tip-btn" onclick="tip(this,'inflCosti')">?</button></div><div class="field-controls"><input type="number" id="inflCosti" value="2.0" min="0" max="10" step="0.1" oninput="calc()"><span class="field-unit">%/a</span></div></div>
+    <div class="field"><div class="field-label">Revamping inverter (anno)<button class="tip-btn" onclick="tip(this,'revamping')">?</button></div><div class="field-controls"><input type="number" id="annoRev" value="15" min="5" max="30" step="1" oninput="calc()"><span class="field-unit">anno</span></div></div>
+    <div class="field"><div class="field-label">Costo revamping</div><div class="field-controls"><input type="number" id="costoRev" value="5000" min="1000" max="50000" step="500" oninput="calc()"><span class="field-unit">€</span></div></div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-header"><span class="dot"></span>Degrado e orizzonti</div>
+    <div class="field"><div class="field-label">Degrado pannelli/anno<button class="tip-btn" onclick="tip(this,'degrado')">?</button></div><div class="field-controls"><input type="number" id="degrado" value="0.5" min="0" max="2" step="0.1" oninput="calc()"><span class="field-unit">%/a</span></div></div>
+    <div class="field"><div class="field-label">Crescita consumi fisiologica<button class="tip-btn" onclick="tip(this,'aumentoConsumi')">?</button></div><div class="field-controls"><input type="number" id="aumentoConsumi" value="0.5" min="0" max="5" step="0.1" oninput="calc()"><span class="field-unit">%/a</span></div></div>
+    <div class="field-check">
+      <div class="field-label">Installazione pompa di calore<button class="tip-btn" onclick="tip(this,'pdc')">?</button></div>
+      <label class="toggle"><input type="checkbox" id="hasPDC" onchange="togglePDC()"><span class="toggle-slider"></span></label>
+    </div>
+    <div id="pdcSection" style="display:none;">
+      <div class="field"><div class="field-label">Anno installazione PDC</div><div class="field-controls"><input type="number" id="annoPDC" value="5" min="1" max="30" step="1" oninput="calc()"><span class="field-unit">anno</span></div></div>
+      <div class="field"><div class="field-label">Incremento consumi PDC<button class="tip-btn" onclick="tip(this,'incrementoPDC')">?</button></div><div class="field-controls"><input type="number" id="incrementoPDC" value="50" min="5" max="200" step="5" oninput="calc()"><span class="field-unit">%</span></div></div>
+      <div class="field-computed"><span class="lbl">Nuovi consumi stimati (POD)</span><span class="val" id="nuoviConsumi" style="color:var(--amber);">–</span></div>
+    </div>
+    <div class="field"><div class="field-label">Anni simulazione</div><div class="field-controls"><input type="number" id="anniSim" value="30" min="10" max="40" step="1" oninput="calc()"><span class="field-unit">anni</span></div></div>
+  </div>
+
+</div><!-- end sidebar -->
+
+<div class="content" id="content"></div>
+</div><!-- end main -->
+
+<!-- METODOLOGIA PAGE -->
+<div id="metodologiaPage" style="display:none;overflow-y:auto;height:calc(100vh - 97px);padding:32px;max-width:960px;margin:0 auto;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+    <h2 style="font-size:20px;font-weight:700;color:var(--gray-900);">📋 Note metodologiche e assunzioni</h2>
+    <button onclick="showPage('simulatore')" style="padding:8px 16px;border:1px solid var(--gray-200);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;color:var(--gray-700);">← Torna al simulatore</button>
+  </div>
+
+  <!-- SEZIONE: Profili di consumo -->
+  <div class="metodo-card">
+    <div class="metodo-title">🕐 Profili di consumo e calcolo autoconsumo</div>
+    <div class="metodo-body">
+      <p>Il GSE calcola l'energia condivisa nella CER <strong>ora per ora</strong>, come il minimo tra energia prodotta e consumata in quell'ora. Il simulatore stima questa coincidenza attraverso profili di consumo semplificati che descrivono la distribuzione giornaliera dei carichi.</p>
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Profilo</th><th>% consumi in ore solari (8-18h)</th><th>Tipico per</th></tr></thead>
+          <tbody>
+            <tr><td>🌙 Serale</td><td>~5%</td><td>Chiesa, sala parrocchiale, attività serali</td></tr>
+            <tr><td>🌅 Mattina+sera</td><td>~35%</td><td>Ufficio parrocchiale, attività bimodali</td></tr>
+            <tr><td>☀️ Diurno</td><td>~65%</td><td>Scuola materna, uffici, laboratori</td></tr>
+            <tr><td>🔄 Uniforme</td><td>~40%</td><td>Mix di utenze, abitazione (canonica)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="metodo-note">
+        <strong>Gerarchia di utilizzo dell'energia prodotta:</strong><br>
+        1️⃣ <strong>Autoconsumo fisico</strong> — energia usata direttamente sul POD impianto nelle ore di produzione (o dalla batteria nelle ore serali)<br>
+        2️⃣ <strong>Autoconsumo virtuale CER</strong> — energia residua condivisa con gli altri POD membri della CER durante le ore di produzione<br>
+        3️⃣ <strong>Vendita RID</strong> — quota rimanente immessa in rete e venduta al GSE al prezzo zonale orario
+      </div>
+      <div class="metodo-note" style="background:var(--amber-light);border-color:rgba(212,112,10,.2);color:var(--amber);">
+        ⚠️ <strong>Importante sulle batterie:</strong> le batterie <em>non aumentano</em> i consumi elettrici della parrocchia. Spostano energia prodotta di giorno (che altrimenti andrebbe in RID) verso le ore serali, aumentando l'autoconsumo fisico. I consumi totali della parrocchia restano invariati; cambia solo la fonte.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: Incentivi GSE -->
+  <div class="metodo-card">
+    <div class="metodo-title">💶 Incentivi GSE e CER — Decreto CACER</div>
+    <div class="metodo-body">
+      <p>La parrocchia può accedere agli incentivi come <strong>Comunità Energetica Rinnovabile (CER)</strong> ai sensi del Decreto MASE n.414 del 7/12/2023 (Decreto CACER), a condizione che tutti i POD siano sottesi alla stessa cabina primaria.</p>
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Voce</th><th>Valore</th><th>Durata</th><th>Riferimento normativo</th></tr></thead>
+          <tbody>
+            <tr><td>Tariffa premio base</td><td>80 + max(0; 180–PZ) €/MWh, cap 120 €/MWh</td><td>20 anni</td><td>Decreto CACER, Allegato 1</td></tr>
+            <tr><td>Maggiorazione Nord Italia</td><td>+10 €/MWh (+0,01 €/kWh)</td><td>20 anni</td><td>Decreto CACER, Allegato 1, Tab. A</td></tr>
+            <tr><td>Corrispettivo ARERA</td><td>~0,009–0,012 €/kWh</td><td>Annuale</td><td>Delibera ARERA 727/2022/R/eel</td></tr>
+            <tr><td>RID (post-incentivo)</td><td>Prezzo zonale orario (~0,11 €/kWh media 2025)</td><td>Illimitata</td><td>GSE — Ritiro Dedicato</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="metodo-note">
+        Con PUN medio 2025 ~116 €/MWh: TIP = 80 + max(0; 180–116) = 80+64 = 144 → cappato a <strong>120 €/MWh = 0,12 €/kWh</strong>.<br>
+        Con maggiorazione Nord: <strong>0,13 €/kWh</strong>. Con corrispettivo ARERA: <strong>~0,14 €/kWh</strong> totale.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: Dati tecnici impianto -->
+  <div class="metodo-card">
+    <div class="metodo-title">⚙️ Dati tecnici e producibilità</div>
+    <div class="metodo-body">
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Parametro</th><th>Valore usato</th><th>Range di mercato</th><th>Fonte</th></tr></thead>
+          <tbody>
+            <tr><td>Producibilità (Sud, Nord Italia)</td><td>1.150 kWh/kWp/anno</td><td>1.100–1.250 kWh/kWp</td><td>PVGIS — Commissione Europea</td></tr>
+            <tr><td>Degrado annuo pannelli</td><td>0,5%/anno</td><td>0,4–0,7%/anno</td><td>IEC 61215 — garanzia produttori top tier</td></tr>
+            <tr><td>Efficienza ciclo batteria</td><td>92%</td><td>90–95%</td><td>Standard produttori Li-Ion (Pylontech, Huawei)</td></tr>
+            <tr><td>Cicli utili batteria/anno</td><td>~300</td><td>250–350</td><td>Datasheet produttori</td></tr>
+            <tr><td>Vita utile inverter</td><td>10–15 anni</td><td>10–15 anni</td><td>Fronius, SMA, Huawei</td></tr>
+            <tr><td>Vita utile pannelli</td><td>25–30 anni</td><td>25–30 anni</td><td>Garanzia produttori</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: Trend prezzi -->
+  <div class="metodo-card">
+    <div class="metodo-title">📈 Trend storico prezzi componenti (2015–2025)</div>
+    <div class="metodo-body">
+      <p>I prezzi dei componenti fotovoltaici hanno subito un calo drastico nell'ultimo decennio, con un'inversione temporanea nel 2021–2022 dovuta al Superbonus 110% e alle crisi di fornitura globali.</p>
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Anno</th><th>Pannelli (€/Wp)</th><th>Inverter (€/kW)</th><th>Installazione+pratiche (€/kWp)</th><th>Totale chiavi in mano (€/kWp)</th></tr></thead>
+          <tbody>
+            <tr><td>2015</td><td>0,55–0,65</td><td>120–180</td><td>500–700</td><td>1.800–2.200</td></tr>
+            <tr><td>2017</td><td>0,35–0,45</td><td>90–140</td><td>450–600</td><td>1.400–1.800</td></tr>
+            <tr><td>2019</td><td>0,25–0,30</td><td>70–110</td><td>380–520</td><td>1.100–1.400</td></tr>
+            <tr><td>2021</td><td>0,32–0,40</td><td>80–130</td><td>500–700</td><td>1.300–1.700</td></tr>
+            <tr><td>2022</td><td>0,38–0,48</td><td>100–150</td><td>600–800</td><td>1.500–2.000</td></tr>
+            <tr><td>2023</td><td>0,18–0,28</td><td>60–90</td><td>420–580</td><td>1.100–1.500</td></tr>
+            <tr><td>2024</td><td>0,09–0,13</td><td>27–50</td><td>380–520</td><td>900–1.300</td></tr>
+            <tr><td>2025</td><td>0,09–0,12</td><td>25–45</td><td>380–500</td><td>850–1.200</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="metodo-note">
+        Fonti: GSE/QualEnergia (moduli Italia), PV Tech/sun.store pv.index Nov.2024 (inverter Europa), IRENA Renewable Power Generation Costs 2023, Fraunhofer ISE, elaborazioni di mercato.<br>
+        I valori si riferiscono a impianti commerciali da 20–50 kWp. I prezzi residenziali (3–10 kWp) sono tipicamente 20–40% più alti per i minori volumi.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: Assunzioni economiche -->
+  <div class="metodo-card">
+    <div class="metodo-title">📊 Assunzioni economiche del modello</div>
+    <div class="metodo-body">
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Parametro</th><th>Valore</th><th>Giustificazione</th></tr></thead>
+          <tbody>
+            <tr><td>Inflazione energetica</td><td>3,0%/anno</td><td>Media storica PUN 2004–2026: +3,99%/anno. Scelta prudenziale.</td></tr>
+            <tr><td>Inflazione costi operativi</td><td>2,0%/anno</td><td>Target BCE. Standard nei business plan a lungo termine.</td></tr>
+            <tr><td>Prezzo energia attuale</td><td>€0,38/kWh</td><td>Bolletta reale della parrocchia (tutte le componenti incluse).</td></tr>
+            <tr><td>Orizzonte simulazione</td><td>30 anni</td><td>Vita utile garantita dei pannelli. Incentivi GSE: 20 anni.</td></tr>
+            <tr><td>Crescita consumi fisiologica</td><td>0,5%/anno</td><td>Conservativa. Con PDC: +40–80% nell'anno di installazione.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="metodo-note" style="background:var(--green-light);border-color:rgba(45,125,79,.2);color:var(--green-dark);">
+        ✅ <strong>Il modello è volutamente prudenziale:</strong> inflazione energetica al 3% (sotto la media storica), prezzi impianto nella fascia alta di mercato, nessuna considerazione di futuri rialzi del prezzo del gas. Questo significa che i risultati reali saranno probabilmente migliori di quelli simulati.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: PUN storico -->
+  <div class="metodo-card">
+    <div class="metodo-title">⚡ Trend storico PUN — Prezzo Unico Nazionale (2004–2025)</div>
+    <div class="metodo-body">
+      <p>Il PUN è il prezzo all'ingrosso dell'energia elettrica sulla Borsa Elettrica Italiana (GME), riferimento per il mercato del Ritiro Dedicato e per la tariffa premio GSE. Dal 1° gennaio 2025 è denominato <strong>PUN Index GME</strong> con lo stesso metodo di calcolo.</p>
+      <div style="position:relative;width:100%;height:300px;margin:16px 0;">
+        <canvas id="punChart" role="img" aria-label="Istogramma PUN medio annuo 2004-2025"></canvas>
+      </div>
+      <div class="metodo-note" style="margin-top:0;">
+        <strong>Lettura del grafico:</strong> il picco del 2022 (303,95 €/MWh) è stato causato dalla crisi energetica post-invasione dell'Ucraina. Il 2023–2024 ha visto un rapido rientro. Il 2025 si attesta a 115,9 €/MWh (+7% sul 2024), ancora il più alto tra le principali borse europee per il peso del gas nella formazione del prezzo italiano.<br><br>
+        <strong>Rilevanza per il simulatore:</strong> il PUN determina sia il prezzo RID (vendita alla rete) sia, indirettamente, la tariffa premio GSE tramite la formula TIP = 80 + max(0; 180–PZ) €/MWh cap 120. Con PUN stabile attorno a 110–120 €/MWh, la tariffa premio resta al massimo di 120 €/MWh = 0,12 €/kWh.
+      </div>
+      <div class="metodo-table-wrap" style="margin-top:12px;">
+        <table class="metodo-table">
+          <thead><tr><th>Anno</th><th>PUN medio (€/MWh)</th><th>Note principali</th></tr></thead>
+          <tbody>
+            <tr><td>2004</td><td>51,6</td><td>Avvio Borsa Elettrica Italiana</td></tr>
+            <tr><td>2005</td><td>58,6</td><td>—</td></tr>
+            <tr><td>2006</td><td>74,8</td><td>Picco pre-crisi</td></tr>
+            <tr><td>2007</td><td>71,0</td><td>—</td></tr>
+            <tr><td>2008</td><td>87,0</td><td>Crisi finanziaria globale</td></tr>
+            <tr><td>2009</td><td>63,7</td><td>Crollo domanda post-crisi</td></tr>
+            <tr><td>2010</td><td>64,1</td><td>Ripresa parziale</td></tr>
+            <tr><td>2011</td><td>72,2</td><td>—</td></tr>
+            <tr><td>2012</td><td>75,5</td><td>—</td></tr>
+            <tr><td>2013</td><td>63,0</td><td>Crescita rinnovabili abbassa il PUN</td></tr>
+            <tr><td>2014</td><td>52,1</td><td>—</td></tr>
+            <tr><td>2015</td><td>52,3</td><td>—</td></tr>
+            <tr><td>2016</td><td>42,8</td><td>Minimo storico (rinnovabili + bassa domanda)</td></tr>
+            <tr><td>2017</td><td>54,0</td><td>—</td></tr>
+            <tr><td>2018</td><td>61,3</td><td>—</td></tr>
+            <tr><td>2019</td><td>52,3</td><td>—</td></tr>
+            <tr><td>2020</td><td>38,9</td><td>Minimo COVID: crollo domanda industriale</td></tr>
+            <tr><td>2021</td><td>125,5</td><td>Rimbalzo post-COVID + crisi gas</td></tr>
+            <tr style="background:rgba(192,57,43,.06);"><td><strong>2022</strong></td><td><strong>303,95</strong></td><td><strong>Picco storico — crisi energetica Russia-Ucraina</strong></td></tr>
+            <tr><td>2023</td><td>125,96</td><td>Rientro rapido (ARERA)</td></tr>
+            <tr><td>2024</td><td>109,05</td><td>Ulteriore calo (ARERA)</td></tr>
+            <tr><td>2025</td><td>115,9</td><td>+7% sul 2024 — ancora il più alto in Europa (ARERA)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;">
+        Fonti: GME (Gestore dei Mercati Energetici) — dati storici; ARERA delibere annuali 2024 e 2025; Wikipedia PUN storico (2004–2023).
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: Costi impianto -->
+  <div class="metodo-card">
+    <div class="metodo-title">🔧 Struttura dei costi dell'impianto fotovoltaico (25 kWp, falda, Nord Italia 2025)</div>
+    <div class="metodo-body">
+      <p>I valori di default nel simulatore sono nella fascia <strong>prudenziale</strong> del mercato 2025 per un impianto commerciale da 20–30 kWp su tetto a falda a Verona, con pratiche CER incluse. È più facile giustificare un consuntivo migliore del previsto che uno peggiore.</p>
+
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Voce</th><th>Dettaglio</th><th>Prudenziale (usato)</th><th>Ottimistico</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Materiali</strong></td>
+              <td>
+                Pannelli monocristallini (Longi, JA Solar): €180–220/kWp<br>
+                Inverter stringa 25 kW (Huawei, Fronius): €100–130/kWp<br>
+                Strutture di montaggio su falda: €120–160/kWp<br>
+                Cavi, quadri, protezioni, contatore bidirezionale: €80–120/kWp<br>
+                <em style="font-size:11px;color:var(--gray-400);">+ margine rivenditore installatore (30–40%)</em>
+              </td>
+              <td><strong>€1.050/kWp</strong></td>
+              <td>€900/kWp</td>
+            </tr>
+            <tr>
+              <td><strong>Installazione</strong></td>
+              <td>
+                Manodopera montaggio strutture e pannelli su falda: €150–200/kWp<br>
+                Cablaggio elettrico e quadri: €80–120/kWp<br>
+                Collaudo, messa in servizio, allacciamento rete: €70–130/kWp<br>
+                <em style="font-size:11px;color:var(--gray-400);">La falda è più cara del piano: ponteggi, ancoraggi specifici al manto, impermeabilizzazione</em>
+              </td>
+              <td><strong>€400/kWp</strong></td>
+              <td>€320/kWp</td>
+            </tr>
+            <tr>
+              <td><strong>Progettazione e pratiche</strong></td>
+              <td>
+                Progetto elettrico e strutturale: €50–80/kWp<br>
+                Pratiche SUAP/edilizia (se necessarie): €20–40/kWp<br>
+                Pratica GSE connessione + incentivi: €30–50/kWp<br>
+                Costituzione CER e contratto GSE: €50–80 flat<br>
+                <em style="font-size:11px;color:var(--gray-400);">La quota CER incide di più su impianti piccoli (costo fisso)</em>
+              </td>
+              <td><strong>€200/kWp</strong></td>
+              <td>€150/kWp</td>
+            </tr>
+            <tr style="background:var(--gray-50);font-weight:600;">
+              <td>Totale netto (IVA esclusa)</td>
+              <td></td>
+              <td>€1.650/kWp</td>
+              <td>€1.370/kWp</td>
+            </tr>
+            <tr style="background:var(--gray-50);font-weight:600;">
+              <td>IVA 10%</td>
+              <td></td>
+              <td>+€165/kWp</td>
+              <td>+€137/kWp</td>
+            </tr>
+            <tr style="background:var(--sun-light);font-weight:700;">
+              <td>Totale chiavi in mano (IVA inclusa)</td>
+              <td></td>
+              <td style="color:var(--sun-dark);">€1.815/kWp → ~€45.375 per 25 kWp</td>
+              <td>€1.507/kWp</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="metodo-note" style="margin-top:12px;">
+        <strong>Range di mercato Italia 2025</strong> per impianti commerciali 20–50 kWp (fonte: IRENA, Fraunhofer ISE, rilevazioni di mercato):<br>
+        • Entry level (componenti base, installatore low-cost): €1.300–1.500/kWp lordo<br>
+        • Mid range (qualità mainstream, installatore certificato): €1.600–1.900/kWp lordo ← <em>fascia usata nel simulatore</em><br>
+        • Premium (brand top, garanzie estese, pratiche incluse): €1.900–2.200/kWp lordo<br><br>
+        I prezzi dei <strong>pannelli</strong> sono calati drasticamente nel 2023–2024 (–68% dal 2022) ma la componente <strong>installazione e pratiche</strong> resta stabile perché dipende dal costo del lavoro italiano. Questo riduce i margini degli installatori ma non abbassa proporzionalmente il preventivo finale.
+      </div>
+
+      <div class="metodo-note" style="background:var(--amber-light);border-color:rgba(212,112,10,.2);color:var(--amber);margin-top:8px;">
+        ⚠️ <strong>Raccomandazione:</strong> richiedere 2–3 preventivi reali da installatori locali certificati (SOA categoria OG9 o OG10) prima della presentazione definitiva. I prezzi variano anche del 20% tra installatori nella stessa provincia. Verificare che il preventivo includa esplicitamente: pratiche GSE, contratto CER, collaudo ARPA/INAIL se richiesto, e smaltimento imballaggi.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: POD unico -->
+  <div class="metodo-card">
+    <div class="metodo-title">🔌 Scenario POD unico aggregato — fattibilità e costi</div>
+    <div class="metodo-body">
+      <p>Invece di mantenere contatori separati collegati tramite CER virtuale, è tecnicamente possibile aggregare tutti gli edifici parrocchiali sotto un <strong>unico POD</strong> fisicamente collegato all'impianto fotovoltaico, massimizzando l'autoconsumo fisico diretto.</p>
+      <div class="metodo-note" style="background:var(--green-light);border-color:rgba(45,125,79,.2);color:var(--green-dark);margin-bottom:12px;">
+        ✅ <strong>Vantaggio principale:</strong> con consumi aggregati di ~34.210 kWh/anno e produzione ~28.750 kWh/anno (25 kWp su Opere), la produzione è quasi interamente assorbita dai carichi → autoconsumo fisico potenziale fino all'80–85%. Risparmio diretto in bolletta massimizzato, tariffa premio GSE non necessaria (o marginale).
+      </div>
+      <div class="metodo-table-wrap">
+        <table class="metodo-table">
+          <thead><tr><th>Voce</th><th>Dettaglio</th><th>Costo stimato</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Cavi elettrici BT</strong></td><td>Cavo 25mm² per collegare gli edifici. Distanza massima nel lotto: ~80–100 m. Tutto su suolo privato (nessuna strada pubblica — verificato su Maps).</td><td>€1.500–3.000</td></tr>
+            <tr><td><strong>Scavo e ripristino</strong></td><td>Interramento su cortile/giardino privato. Alternativa più economica: canalina aerea sotto gronda o lungo pareti contige.</td><td>€2.000–5.000 (interrato)<br>€500–1.500 (aereo)</td></tr>
+            <tr><td><strong>Sistema EMS/BMS</strong></td><td>Energy Management System per gestire i flussi tra impianto, batteria centralizzata e i vari edifici in tempo reale.</td><td>€3.000–6.000</td></tr>
+            <tr><td><strong>Pratica e-distribuzione</strong></td><td>Unificazione POD: nuova potenza contrattuale aggregata, eventuale adeguamento contatore/cabina MT/BT.</td><td>€500–1.500</td></tr>
+            <tr style="background:var(--sun-light);font-weight:700;"><td>Totale stimato</td><td>Soluzione completa con interramento e EMS</td><td style="color:var(--sun-dark);">€8.000–15.000</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="metodo-note" style="margin-top:12px;">
+        <strong>Conformazione del lotto (Parrocchia SS. Pietro e Paolo, Villafranca di Verona):</strong><br>
+        Il complesso è su un lotto unico continuo — chiesa, oratorio, opere parrocchiali, sede scout e campetto sono tutti contigui senza strade pubbliche che attraversano il perimetro. Nessun permesso TOSAP, nessun ripristino stradale: scavi solo su suolo privato. Distanza massima stimata tra gli edifici: <strong>80–100 m</strong>.
+      </div>
+      <div class="metodo-note" style="background:var(--amber-light);border-color:rgba(212,112,10,.2);color:var(--amber);margin-top:8px;">
+        ⚠️ <strong>Ostacoli principali:</strong>
+        <ul style="margin:6px 0 0 16px;padding:0;">
+          <li>e-distribuzione deve approvare la modifica: possibile richiesta di potenziamento della cabina MT/BT servente</li>
+          <li>Se alcuni edifici non sono di proprietà della parrocchia, la modifica contrattuale richiede accordi specifici</li>
+          <li>La rete elettrica interna degli edifici deve essere adeguata a ricevere la nuova alimentazione centralizzata</li>
+        </ul>
+        <br>Si raccomanda una <strong>pre-istruttoria con ingegnere elettrico abilitato</strong> e richiesta preventiva a e-distribuzione prima di decidere.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEZIONE: Limitazioni -->
+  <div class="metodo-card">
+    <div class="metodo-title">⚠️ Limitazioni del modello</div>
+    <div class="metodo-body">
+      <ul class="metodo-list">
+        <li>I profili di consumo sono <strong>stime annue medie</strong>: il GSE calcola l'energia condivisa ora per ora, quindi il risultato reale potrebbe differire del ±10–15% dalla stima.</li>
+        <li>Il <strong>prezzo RID</strong> è volatile (prezzo di mercato orario): usato come media annua stabile, ma nella realtà oscilla significativamente.</li>
+        <li>L'<strong>IVA applicabile</strong> agli enti ecclesiastici per la CER è una questione ancora non completamente definita normativamente. Si raccomanda consulenza fiscale specializzata.</li>
+        <li>Il modello <strong>non considera</strong> il risparmio sulla bolletta del gas in caso di installazione di pompa di calore (beneficio aggiuntivo non incluso).</li>
+        <li>La <strong>tariffa premio GSE</strong> dopo il 20° anno non è garantita: il modello assume zero incentivi e solo RID al mercato.</li>
+        <li>I <strong>costi di connessione alla rete</strong> e le eventuali opere civili non sono inclusi nel preventivo dell'impianto.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:32px;padding:16px;font-size:11px;color:var(--gray-400);">
+    Simulatore sviluppato per uso interno — dati aggiornati ad agosto 2025 — non costituisce consulenza finanziaria o legale
+  </div>
+</div>
+
+<!-- TOOLTIP — always on top, repositioned by JS -->
+<div id="tooltipBox">
+  <button class="tip-close" onclick="hideTip()">✕</button>
+  <div class="tip-title" id="tipTitle"></div>
+  <div class="tip-text" id="tipText"></div>
+  <div class="tip-ref" id="tipRef"></div>
+  <div class="tip-warn" id="tipWarn"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── TOOLTIP DATA ─────────────────────────────────────────────────────────────
+const TIPS = {
+  tetto:{title:'Tipo di tetto',text:'Falda: 6,5 m²/kWp (pannelli inclinati, meno distanza anti-ombra).\nPiano: 10 m²/kWp (serve distanza tra le file per evitare auto-ombreggiamento).',ref:'Regola tecnica standard installatori FV Italia'},
+  superficie:{title:'Superficie disponibile',text:'Superficie utile della falda/copertura. Sottrarre camini, lucernari, bordi di sicurezza e zone ombreggiate da alberi o comignoli.'},
+  esposizione:{title:'Esposizione / orientamento',text:'Producibilità specifica per kWp al Nord Italia (Verona, PVGIS):\n• Sud: ~1.150 kWh/kWp/anno\n• Est/Ovest: ~950 kWh/kWp\n• Nord: ~700 kWh/kWp (sconsigliato)',ref:'PVGIS — Commissione Europea, dati Nord Italia'},
+  consumoPOD:{title:'Consumo POD impianto',text:'kWh/anno dell\'utenza fisicamente collegata all\'impianto. L\'autoconsumo diretto avviene solo su questo POD e solo nelle ore di contemporaneità tra produzione solare e consumo.\n\nPer una parrocchia con consumi serali, questa contemporaneità è bassa (5-10% della produzione).',warn:'⚠️ Coerenza: verifica che il % autoconsumo fisico non superi il rapporto tra consumo POD e produzione annua. Esempio: 10.526 kWh consumo / 28.750 kWh produzione = max 37% autoconsumo fisico teorico.'},
+  altriPOD:{title:'Consumi altri POD (CER)',text:'kWh/anno degli altri contatori nella stessa CER (altri edifici parrocchiali, canonica, ecc.). L\'energia che il fotovoltaico immette in rete nelle ore diurne viene "matchata" con il consumo contemporaneo di questi POD e incentivata come autoconsumo virtuale.'},
+  prezzoEnergia:{title:'Prezzo energia attuale',text:'Costo totale per kWh in bolletta (materia energia + distribuzione + oneri sistema + IVA).\n\nValori di riferimento 2025:\n• Domestici: ~€0,35/kWh (ARERA)\n• Non domestici (Eurostat): ~€0,26/kWh lordo\n• Piccole utenze con tutti gli oneri: €0,33–0,40/kWh',ref:'ARERA 2025: €0,3512/kWh domestici · Eurostat II sem. 2025: €0,2544/kWh non dom.',warn:'⚠️ €0,38 è nella fascia alta. Verifica sulla bolletta reale della parrocchia.'},
+  inflEnergia:{title:'Inflazione energetica',text:'Media storica PUN Italia ultimi 23 anni (2004-2026): ~4%/anno. Il 3% è un\'assunzione prudenziale che rende il modello conservativo: sottostima i benefici futuri e quindi tutela la presentazione.',ref:'Elaborazione su dati GME/ARERA 2004-2026: media +3,99%/anno'},
+  tariffaPremio:{title:'Tariffa premio GSE (TCEC)',text:'Incentivo per ogni kWh di energia condivisa nella CER. Formula per impianti ≤200 kW:\n\nTIP = 80 + max(0; 180 – PZ) €/MWh\nCap massimo: 120 €/MWh\n\nCon PUN medio 2025 (~116 €/MWh):\nTIP = 80 + 64 = 144 → cap 120 €/MWh = 0,12 €/kWh\n\nDurata: 20 anni dalla messa in esercizio.',ref:'Decreto MASE n.414 del 7/12/2023 (Decreto CACER) — Allegato 1',warn:'⚠️ Si applica SOLO sull\'energia effettivamente condivisa ora per ora (min tra produzione e consumo CER), non sulla produzione totale.'},
+  maggiorazioneNord:{title:'Maggiorazione Nord Italia',text:'Gli impianti fotovoltaici nel Centro-Nord ricevono +10 €/MWh (+0,01 €/kWh) sulla tariffa base. Verona rientra nella zona Nord → la maggiorazione si applica.',ref:'Decreto CACER, Allegato 1, Tab. A — Maggiorazione geografica Nord/Centro: +10 €/MWh per FV'},
+  arera:{title:'Corrispettivo ARERA',text:'Rimborso delle componenti tariffarie (trasmissione, distribuzione) sull\'energia autoconsumata virtualmente. Valore indicativo 2024-2025: €0,009–0,012/kWh, calcolato su base zonale.',ref:'Delibera ARERA 727/2022/R/eel — aggiornata annualmente da ARERA'},
+  rid:{title:'Prezzo RID (Ritiro Dedicato)',text:'Prezzo al quale il GSE acquista l\'energia immessa in rete non autoconsumata. Corrisponde al Prezzo Zonale Orario medio.\n\nMedia PUN 2025: ~115,9 €/MWh ≈ 0,116 €/kWh\nIl valore varia ogni ora — questa è la media annua.',ref:'ARERA Relazione Annuale 2026: PUN medio 2025 = 115,9 €/MWh',warn:'⚠️ Il RID viene pagato al prezzo spot di mercato, non a prezzo fisso. È la voce meno stabile economicamente.'},
+  durataIncentivi:{title:'Durata incentivi GSE',text:'Il Decreto CACER garantisce la tariffa premio per 20 anni dalla data di messa in esercizio. Dal 21° anno in poi rimangono solo il RID (vendita al mercato) e l\'autoconsumo fisico diretto.',ref:'Decreto MASE n.414 del 7/12/2023, art. 5'},
+  profiloPOD:{title:'Profilo consumo POD impianto',text:'Distribuzione temporale dei consumi del contatore collegato all\'impianto.\n\n🌙 Serale (5% diurno): consumi quasi tutti dopo le 17. Tipico per chiese e sale parrocchiali.\n🌅 Mattina+sera (35% diurno): carichi in due fasce. Tipico per uffici parrocchiali.\n☀️ Diurno (65% diurno): consumi nelle ore 8-18. Tipico per scuole materne.\n🔄 Uniforme (40% diurno): distribuito nelle 24h.\n\nIl calcolo stima quanta produzione solare si sovrappone ai consumi — più questa coincidenza e\' alta, maggiore e\' l\'autoconsumo fisico.',ref:'Il GSE calcola energia condivisa come min(produzione, consumo) su base oraria'},
+  profiloAltri:{title:'Profilo consumo altri POD',text:'Distribuzione temporale dei consumi degli altri contatori nella CER (canonica, uffici, ecc.).\n\nPer un mix di utenze diverse, Uniforme e\' la scelta prudente: parte dei consumi cade nelle ore solari, parte la sera.\n\nLa % virtuale calcolata rappresenta quanta energia il fotovoltaico riesce a condividere con questi POD durante le ore di produzione.\n\nGerarchia utilizzo energia:\n1\ufe0f\u20e3 Autoconsumo fisico (diretto o da batteria)\n2\ufe0f\u20e3 Autoconsumo virtuale CER\n3\ufe0f\u20e3 Vendita RID (residuo)\n\nL\'eccedenza della batteria va prima al virtuale, poi al RID.'},
+  fisico:{title:'Autoconsumo fisico diretto',text:'% della produzione usata immediatamente sul POD impianto nelle stesse ore di produzione solare.\n\n📍 Per una parrocchia con consumi serali:\n• Senza batterie: 5–10% (solo luci/apparecchi accesi di giorno)\n• Con batterie: 50–65% (la batteria si carica di giorno e scarica la sera durante funzioni e attività)\n\nValore tipico strutture con consumi diurni: 25–40%.',warn:'⚠️ Importante: questo valore è critico. Con consumi prevalentemente serali e nessuna batteria, il 30% originale era troppo ottimistico.'},
+  virtuale:{title:'Autoconsumo virtuale (CER)',text:'% della produzione condivisa virtualmente con altri POD della stessa CER (cabina primaria). Su questa quota si applica la tariffa premio GSE.\n\n📍 Per la parrocchia di Villafranca:\nL\'energia prodotta di giorno può essere "consumata" da altri POD (es. canonica se ha carichi diurni, opere parrocchiali). La quota virtuale + fisica non può superare 100%.',ref:'Decreto CACER — energia condivisa = min(produzione, consumo CER) su base oraria'},
+  batterie:{title:'Batterie di accumulo',text:'Le batterie spostano l\'energia prodotta di giorno verso le ore serali, aumentando l\'autoconsumo fisico. Per una parrocchia con consumi serali, le batterie sono particolarmente indicate.\n\nPro: +risparmio diretto in bolletta, minore dipendenza dal mercato\nContro: costo elevato (€3.000/modulo da 5 kWh), vita utile 10-15 anni',warn:'⚠️ Con batterie e consumi serali, l\'autoconsumo fisico realistico è 50-65% della produzione. L\'autoconsumo virtuale si riduce di conseguenza.'},
+  capacitaBatt:{title:'Capacità accumulo',text:'Regola empirica: 1,5 kWh di batteria per kWp installato.\n25 kWp → ~37,5 kWh di batteria.\n\nModuli tipici: Pylontech US5000 (5 kWh), Huawei LUNA (5 kWh).\nCosto installato: €500–800/kWh tutto compreso.',ref:'Standard di settore CACER; produttori Pylontech, Huawei'},
+  costoMat:{title:'Costo materiali',text:'Include pannelli (monocristallini premium ~€0,11/Wp), inverter stringa, strutture di montaggio, cablaggi e quadri.\n\nMercato Italia 2025 per 20-50 kWp:\n• Entry level: €900/kWp\n• Mid range: €1.100/kWp\n• Premium: €1.300/kWp',ref:'Otovo, IRENA, prezzi mercato italiano giugno 2025'},
+  iva:{title:'IVA applicata',text:'Per enti ecclesiastici (parrocchie) l\'IVA applicabile agli impianti fotovoltaici è il 10%, come per le abitazioni residenziali.\n\nAttenzione: verificare se la parrocchia deve aprire partita IVA per la CER — punto normativo ancora non completamente definito.',warn:'⚠️ Da approfondire con un fiscalista esperto in enti religiosi e CER: obbligo di partita IVA e regime IVA applicabile all\'energia ceduta al GSE.'},
+  finanziato:{title:'Modalità copertura costo impianto',text:'Tre scenari possibili:\n\n💰 Fondi propri: la parrocchia paga tutto subito. Il cash flow parte negativo (-costo impianto) e risale con i benefici annui fino al payback.\n\n🙏 Donazioni/raccolta: il costo è coperto dalla comunità parrocchiale. Per la parrocchia il cash flow parte da €0 — il beneficio è immediato dal primo anno. Il costo reale dell\'impianto esiste, ma è sostenuto dalla collettività.\n\n🏦 Finanziamento bancario: nessun esborso iniziale, ma si pagano rate annue per N anni. Il cash flow parte da €0 ma le rate pesano ogni anno fino all\'estinzione del prestito.',warn:'⚠️ Con finanziamento: verifica che le rate siano inferiori al beneficio annuo stimato, altrimenti il cash flow rimane negativo per tutta la durata del prestito.'},
+  capitaleFinanziato:{title:'Capitale finanziato',text:'Importo totale del prestito, normalmente uguale al costo dell\'impianto. Può essere inferiore se la parrocchia copre una parte con fondi propri o donazioni (finanziamento parziale).\n\nEsempio: impianto €45.375, la parrocchia ha €10.000 di fondi propri → capitale finanziato = €35.375.'},
+  tassoFin:{title:'TAN — Tasso Annuo Nominale',text:'Il tasso di interesse annuo applicato al finanziamento, al lordo di spese e commissioni (TAEG).\n\nValori di riferimento 2025 per enti no-profit/religiosi:\n• Credito cooperativo (BCC): 3,5–5,0%\n• Banca etica / finanza sostenibile: 3,0–4,5%\n• Banca ordinaria: 4,5–6,5%\n\nLa rata è calcolata con la formula dell\'annualità: R = C × i×(1+i)^n / ((1+i)^n – 1)',ref:'Formula annualità — standard prestiti a rimborso costante (ammortamento francese)'},
+  rata:{title:'Rata annua del finanziamento',text:'Importo annuo complessivo da rimborsare (capitale + interessi). Per calcolarla: usa un calcolatore di mutuo con importo = costo impianto, tasso = tasso offerto dalla banca, durata = anni scelti.\n\nEsempio (€52.250 a 15 anni, tasso 4%):\nRata annua ≈ €4.700/anno\nTotale pagato: €70.500\nInteressi totali: €18.250\n\nConfronta la rata con il beneficio annuo stimato: se la rata > beneficio, il cash flow è negativo per tutta la durata del finanziamento.',warn:'⚠️ La rata comprende sia la restituzione del capitale che gli interessi. Il campo "Totale interessi" mostra la differenza tra quanto restituisci e il costo originale dell\'impianto.'},
+  manutenzione:{title:'Manutenzione e lavaggio',text:'Comprende pulizia annuale dei pannelli (essenziale: lo sporco riduce la resa del 3-7%), ispezione dell\'inverter e verifica dei collegamenti.\n\nPer impianti >20 kWp si raccomanda un contratto di manutenzione programmata con l\'installatore.',ref:'Costi tipici 2025: €600–1.000/anno per impianti 20-30 kWp'},
+  assicurazione:{title:'Assicurazione All-Risk',text:'Copre danni da eventi atmosferici (grandine, vento forte), furto dei pannelli e responsabilità civile verso terzi. Obbligatoria per impianti su edifici con accesso pubblico come chiese e scuole materne.\n\nCosto tipico: €200–500/anno per 20-30 kWp.',ref:'Mercato assicurativo italiano — polizze dedicate fotovoltaico'},
+  inflCosti:{title:'Inflazione costi operativi',text:'Tasso di crescita annuo dei costi di manutenzione, assicurazione e gestione GSE. Il 2% corrisponde al target di inflazione BCE, assunzione standard nei business plan a lungo termine.',ref:'Target inflazione BCE: 2%/anno'},
+  revamping:{title:'Revamping inverter',text:'L\'inverter ha vita utile 10-15 anni, molto inferiore ai pannelli (25-30 anni). Nella simulazione a 30 anni va sostituito almeno una volta.\n\nCosto sostituzione inverter 25 kWp: €4.000–7.000 chiavi in mano.',ref:'Vita utile media inverter stringa: 10-15 anni (Fronius, SMA, Huawei)'},
+  degrado:{title:'Degrado annuo pannelli',text:'I pannelli perdono circa 0,4–0,7% di efficienza all\'anno per degradazione delle celle. Dopo 30 anni producono ~86% dell\'energia iniziale.\n\nI produttori premium (Longi, JA Solar, Jinko) garantiscono ≤0,55%/anno per 30 anni.',ref:'IEC 61215 — garanzia lineare di potenza produttori top tier'},
+  kpi_prod:{title:'Come si calcola la produzione annua media',text:'La produzione di ogni anno si calcola moltiplicando la potenza installata per la producibilità specifica del sito, poi applicando il degrado annuo dei pannelli.\n\nFormula anno N:\nProduzione(N) = kWp × Producibilità × (1 – degrado)^N\n\nProducibilità specifica (kWh/kWp/anno) per Nord Italia:\n• Sud: 1.150 kWh/kWp\n• Est/Ovest: 950 kWh/kWp\n• Nord: 700 kWh/kWp\n\nEsempio (25 kWp, esposizione Sud, degrado 0,5%):\nAnno 1: 25 × 1.150 × 0,995 = 28.638 kWh\nAnno 15: 25 × 1.150 × 0,995^15 = 26.657 kWh\nAnno 30: 25 × 1.150 × 0,995^30 = 24.837 kWh\n\nMedia a 30 anni: ~26.700 kWh/anno',ref:'PVGIS (Commissione Europea) — dati irraggiamento Nord Italia, falda Sud ottimale'},
+  col_prezzo:{title:'€/kWh — Prezzo energia anno N',text:'Il prezzo in bolletta cresce ogni anno con l\'inflazione energetica impostata.\n\nFormula:\nPrezzo(N) = Prezzo iniziale × (1 + inflaz.)^N\n\nEsempio inflazione 3%:\nAnno 0: €0,380 · Anno 5: €0,441 · Anno 20: €0,686'},
+  col_prod:{title:'Produzione — kWh prodotti anno N',text:'Energia prodotta dall\'impianto nell\'anno, con degrado annuo dei pannelli.\n\nFormula:\nProduzione(N) = kWp × kWh/kWp × (1 – degrado%)^N\n\nEsempio (25 kWp, 1.150 kWh/kWp, degrado 0,5%):\nAnno 1: 28.638 kWh · Anno 15: 26.657 kWh · Anno 30: 24.837 kWh'},
+  col_cons:{title:'Consumo POD impianto (kWh/anno)',text:'Energia consumata dall\'utenza fisicamente collegata all\'impianto, crescente nel tempo per inflazione dei consumi e per eventuale salto dei consumi in caso di installazione PDC.\n\nFormula:\nConsPOD(N) = ConsPOD base × fattore PDC × (1 + cresc. consumi)^N\n\nIl confronto con la Produzione mostra quanto l\'impianto riesce a coprire il fabbisogno del POD.'},
+  col_constot:{title:'Consumo totale CER (kWh/anno)',text:'Somma dei consumi di tutti i POD della CER (POD impianto + altri POD). Rappresenta il fabbisogno energetico complessivo della parrocchia che l\'impianto potrebbe servire.\n\nConsTot(N) = ConsPOD(N) + ConsAltri(N)\n\nNello scenario POD unico aggregato, ConsAltri = 0 e ConsTot = ConsPOD.\n\nIl rapporto Produzione / ConsTot mostra la percentuale di autosufficienza energetica della parrocchia.'},
+  col_fisico:{title:'Risparmio fisico — autoconsumo diretto',text:'Risparmio in bolletta grazie all\'energia usata direttamente sul POD nelle ore di produzione solare.\n\nFormula:\nRisp. fisico(N) = Produzione(N) × % fisico × Prezzo(N)\n\nEsempio (anno 1, fisico 8%, €0,380/kWh):\n28.638 × 8% × 0,380 = €871',warn:'⚠️ Con consumi serali e senza batterie questa voce è bassa (8%). Con batterie può salire al 60%.'},
+  col_gse:{title:'GSE virtuale — tariffa premio CER',text:'Entrate dal GSE per l\'energia condivisa virtualmente nella CER. Attivo solo per i primi 20 anni di incentivo.\n\nFormula:\nGSE(N) = Produzione(N) × % virtuale × (Premio + Magg.Nord + ARERA)\n\nEsempio (anno 1, virtuale 55%, tariffa totale 0,14 €/kWh):\n28.638 × 55% × 0,14 = €2.205\n\nDopo l\'anno 20 questa voce va a zero.',warn:'⚠️ Il GSE calcola l\'energia condivisa ora per ora (minimo tra produzione e consumo CER): la % virtuale è una stima media annua.'},
+  col_rid:{title:'RID — vendita energia alla rete',text:'Ricavo dalla vendita dell\'energia eccedente immessa in rete (non autoconsumata né condivisa CER).\n\nFormula:\nRID(N) = Produzione(N) × % RID × Prezzo RID\ndove % RID = 100% – % fisico – % virtuale\n\nEsempio (anno 1, RID 37%, €0,11/kWh):\n28.638 × 37% × 0,11 = €1.166'},
+  col_costi:{title:'Costi operativi — manutenzione + revamping',text:'Spese annue per tenere l\'impianto in esercizio, indicizzate all\'inflazione. Include il revamping inverter nell\'anno previsto.\n\nFormula:\nCosti(N) = Costi base × (1 + inflaz.costi)^N\n+ Revamping se anno N = anno revamping\n\nEsempio:\nAnno 1: €1.600 × 1,02 = €1.632\nAnno 15 (con revamping €5.000): €2.074 + €5.000 = €7.074'},
+  col_beneficio:{title:'Beneficio netto annuale',text:'Guadagno complessivo dell\'impianto nell\'anno: entrate meno costi operativi.\n\nFormula:\nBeneficio(N) = Risp.fisico + GSE virtuale + RID – Costi op.\n\nEsempio anno 1:\n€871 + €2.205 + €1.166 – €1.632 = €2.610\n\nNell\'anno di revamping il beneficio cala del costo di sostituzione inverter.'},
+  col_boll:{title:'Bollette cumulate senza impianto',text:'Quanto avresti speso in bolletta dal primo anno ad oggi se non avessi installato l\'impianto. Mostra il costo opportunit\u00e0: pi\u00f9 questa cifra cresce (per inflazione energetica), pi\u00f9 conviene aver investito.\n\nFormula:\nBollette(N) = \u03a3 [(CostoPOD + CostoAltriPOD) \u00d7 (1 + inflaz.)^anno]\n\nEsempio (bollette base \u20ac13.000, inflaz. 3%):\nAnno 1: \u20ac13.390\nAnno 5: \u20ac75.400 cumulati\nAnno 20: \u20ac349.000 cumulati\n\nConfronta questo valore con il Cash flow: la differenza \u00e8 il vantaggio assoluto dell\'impianto rispetto al non fare nulla.'},
+  col_cf:{title:'Cash flow cumulativo',text:'Saldo totale dell\'investimento dall\'anno 0 ad oggi.\n\nFormula:\nCF(N) = –Costo impianto + Σ Benefici(anni 1→N)\n\nEsempio:\nAnno 0: –€52.250\nAnno 1: –€52.250 + €2.610 = –€49.640\n...\nQuando CF diventa positivo = payback raggiunto.\nIl valore finale mostra il guadagno netto dell\'operazione a 30 anni.'},
+  aumentoConsumi:{title:'Crescita consumi fisiologica',text:'Tasso annuo di crescita "naturale" dei consumi, indipendentemente dalla PDC: nuovi apparecchi, illuminazione aggiuntiva, piccoli aumenti di attività. Lo 0,5%/anno è un valore conservativo.'},
+  pdc:{title:'Installazione pompa di calore',text:'La pompa di calore (PDC) sostituisce la caldaia a gas per riscaldamento e/o raffrescamento. Elettrifica i consumi termici: i consumi elettrici aumentano significativamente dall\'anno di installazione in poi.\n\nL\'incremento tipico per un edificio come le opere parrocchiali:\n• Solo riscaldamento (PDC aria-aria): +40-60% sui consumi elettrici del POD\n• Riscaldamento + raffrescamento: +60-80%\n• Sistema centralizzato con accumulo termico: +50-70%\n\nLa PDC è comunque più efficiente della caldaia a gas (COP 3-4): 1 kWh elettrico produce 3-4 kWh di calore.',ref:'Valori tipici COP pompa di calore aria-aria residenziale/terziario: 3,0-4,5 (EHPA 2024)'},
+  incrementoPDC:{title:'Incremento consumi dopo PDC',text:'Aumento percentuale dei consumi elettrici del POD impianto dall\'anno di installazione in poi.\n\nEsempio con consumi POD attuali 10.526 kWh/anno e incremento 50%:\nNuovi consumi: 10.526 × 1,50 = 15.789 kWh/anno\n\nValori indicativi:\n• +30-50%: PDC solo per riscaldamento, edificio già ben isolato\n• +50-70%: PDC riscaldamento + raffrescamento estivo\n• +70-100%: edificio grande o poco isolato, uso intensivo',warn:'⚠️ Con più consumi elettrici nelle ore serali, il vantaggio delle batterie aumenta ulteriormente: la PDC può essere programmata per caricarsi anche di notte (tariffa bioraria), riducendo l\'impatto sull\'autoconsumo diretto.'}
+};
+
+// ── TOOLTIP LOGIC ─────────────────────────────────────────────────────────────
+let tipOpen = false;
+function tip(btn, key) {
+  const t = TIPS[key];
+  if (!t) return;
+  const box = document.getElementById('tooltipBox');
+  document.getElementById('tipTitle').textContent = t.title;
+  document.getElementById('tipText').textContent = t.text;
+  const ref = document.getElementById('tipRef');
+  const warn = document.getElementById('tipWarn');
+  ref.textContent = t.ref ? '📋 ' + t.ref : '';
+  ref.style.display = t.ref ? '' : 'none';
+  warn.textContent = t.warn || '';
+  warn.style.display = t.warn ? '' : 'none';
+
+  // Show first so we can measure its height
+  box.style.display = 'block';
+
+  const bRect = btn.getBoundingClientRect();
+  const boxW = 300, margin = 8;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const boxH = box.offsetHeight;
+
+  // Horizontal: prefer to the left of the button; if no room, to the right
+  let left = bRect.left - boxW - 8;
+  if (left < margin) left = bRect.right + 8;
+  if (left + boxW > vw - margin) left = vw - boxW - margin;
+
+  // Vertical: prefer below the button; if no room, go above; clamp to viewport
+  let top = bRect.bottom + 6;
+  if (top + boxH > vh - margin) top = bRect.top - boxH - 6;
+  if (top < margin) top = margin;
+
+  box.style.left = left + 'px';
+  box.style.top  = top  + 'px';
+  tipOpen = true;
+}
+function hideTip() {
+  document.getElementById('tooltipBox').style.display = 'none';
+  tipOpen = false;
+}
+document.addEventListener('click', e => {
+  if (tipOpen && !e.target.closest('#tooltipBox') && !e.target.closest('.tip-btn')) hideTip();
+});
+
+// ── PLANT PRESETS ─────────────────────────────────────────────────────────────
+function setPlant(plant) {
+  document.querySelectorAll('.plant-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  const s = id => document.getElementById(id);
+  // reset profile buttons
+  const selProfile = (pod, profile) => {
+    document.querySelectorAll('[data-pod="' + pod + '"]').forEach(b => b.classList.remove('selected'));
+    const btn = document.querySelector('[data-pod="' + pod + '"][data-profile="' + profile + '"]');
+    if (btn) btn.classList.add('selected');
+  };
+  if (plant === 'opere') {
+    s('surface').value=165; s('potInstallata').value=25;
+    s('consumoPOD').value=10526; s('costoPOD').value=4000;
+    s('consumoAltri').value=23684; s('costoAltri').value=9000;
+    s('hasBatt').checked=false; toggleBatt();
+    pod1Profile='serale';   selProfile('pod1','serale');
+    pod2Profile='uniforme'; selProfile('pod2','uniforme');
+  } else if (plant === 'materna') {
+    s('surface').value=200; s('potInstallata').value=30;
+    s('consumoPOD').value=10526; s('costoPOD').value=4000;
+    s('consumoAltri').value=0; s('costoAltri').value=0;
+    s('hasBatt').checked=false; toggleBatt();
+    pod1Profile='diurno';   selProfile('pod1','diurno');
+    pod2Profile='uniforme'; selProfile('pod2','uniforme');
+  } else if (plant === 'entrambi') {
+    s('surface').value=365; s('potInstallata').value=55;
+    s('consumoPOD').value=10526; s('costoPOD').value=4000;
+    s('consumoAltri').value=23684; s('costoAltri').value=9000;
+    s('hasBatt').checked=false; toggleBatt();
+    pod1Profile='serale';   selProfile('pod1','serale');
+    pod2Profile='uniforme'; selProfile('pod2','uniforme');
+  } else if (plant === 'unificato') {
+    // POD unico: solo i consumi cambiano (aggregati), superficie e potenza restano invariate
+    s('consumoPOD').value=34210; s('costoPOD').value=13000;
+    s('consumoAltri').value=0; s('costoAltri').value=0;
+    s('hasBatt').checked=false; toggleBatt();
+    pod1Profile='mattina'; selProfile('pod1','mattina');
+    pod2Profile='uniforme'; selProfile('pod2','uniforme');
+  }
+  calcAutoconsumo();
+  calc();
+}
+
+// ── PROFILE LOGIC ─────────────────────────────────────────────────────────────
+// Fraction of consumption during solar production hours (8-18), annual average
+const PROFILES = {
+  serale:  { day: 0.05 },
+  mattina: { day: 0.35 },
+  diurno:  { day: 0.65 },
+  uniforme:{ day: 0.40 },
+};
+const BATT_EFF = 0.92; // battery roundtrip efficiency
+
+let pod1Profile = 'serale';
+let pod2Profile = 'uniforme';
+
+function setProfile(pod, profile, btn) {
+  if (pod === 'pod1') pod1Profile = profile;
+  else pod2Profile = profile;
+  document.querySelectorAll('[data-pod="' + pod + '"]').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  calcAutoconsumo();
+  calc();
+}
+
+function calcAutoconsumo() {
+  const hasBatt    = document.getElementById('hasBatt').checked;
+  const kwp        = parseFloat(document.getElementById('potInstallata').value) || 25;
+  const kwhPerKwp  = parseFloat(document.getElementById('orientation').value) || 1150;
+  const consumoPOD = parseFloat(document.getElementById('consumoPOD').value) || 10526;
+  const consumoAlt = parseFloat(document.getElementById('consumoAltri').value) || 23684;
+  const capBatt    = parseFloat(document.getElementById('capacitaBatt').value) || 37.5;
+  const prodAnnua  = kwp * kwhPerKwp;
+
+  // Physical self-consumption (no battery): overlap between PV production and POD1 daytime load
+  const pod1Day     = PROFILES[pod1Profile].day;
+  const cons1Solar  = consumoPOD * pod1Day;
+  const fisicoNoBatt = Math.min(cons1Solar, prodAnnua);
+
+  // Battery contribution: stores excess solar, discharges into evening load
+  // ~300 useful cycles/year, capped by evening consumption and available production
+  const battThroughput = hasBatt ? capBatt * 300 * BATT_EFF : 0;
+  const cons1Evening   = consumoPOD * (1 - pod1Day);
+  const battContrib    = hasBatt ? Math.min(battThroughput, cons1Evening, prodAnnua - fisicoNoBatt) : 0;
+  const fisicoKwh      = Math.min(fisicoNoBatt + battContrib, consumoPOD * 0.95);
+
+  // Virtual: remaining production matched with POD2 daytime consumption
+  const prodResidua = Math.max(0, prodAnnua - fisicoKwh);
+  const pod2Day     = PROFILES[pod2Profile].day;
+  const cons2Solar  = consumoAlt * pod2Day;
+  const virtualeKwh = Math.min(cons2Solar, prodResidua);
+
+  const fisicoP   = Math.min(100, Math.round(fisicoKwh  / prodAnnua * 100));
+  const virtualeP = Math.min(100 - fisicoP, Math.round(virtualeKwh / prodAnnua * 100));
+
+  if (hasBatt) {
+    document.getElementById('fisicoBatt').value   = fisicoP;
+    document.getElementById('virtualeBatt').value = virtualeP;
+  } else {
+    document.getElementById('fisico').value   = fisicoP;
+    document.getElementById('virtuale').value = virtualeP;
+  }
+}
+
+function toggleBatt() {
+  const has = document.getElementById('hasBatt').checked;
+  document.getElementById('battSection').style.display = has ? 'block' : 'none';
+  calcAutoconsumo();
+  calc();
+}
+
+let punChartInst = null;
+
+function showPage(page) {
+  document.getElementById('mainPage').style.display        = page === 'simulatore' ? 'grid' : 'none';
+  document.getElementById('metodologiaPage').style.display = page === 'metodologia' ? 'block' : 'none';
+  document.querySelectorAll('.plant-tab').forEach(t => t.classList.remove('active'));
+  if (page === 'metodologia') {
+    document.getElementById('tab-metodologia').classList.add('active');
+    renderPUNChart();
+  }
+}
+
+function renderPUNChart() {
+  if (punChartInst) { punChartInst.destroy(); punChartInst = null; }
+  const canvas = document.getElementById('punChart');
+  if (!canvas) return;
+
+  const punData = [
+    {y:2004, v:51.6},  {y:2005, v:58.6},  {y:2006, v:74.8},  {y:2007, v:71.0},
+    {y:2008, v:87.0},  {y:2009, v:63.7},  {y:2010, v:64.1},  {y:2011, v:72.2},
+    {y:2012, v:75.5},  {y:2013, v:63.0},  {y:2014, v:52.1},  {y:2015, v:52.3},
+    {y:2016, v:42.8},  {y:2017, v:54.0},  {y:2018, v:61.3},  {y:2019, v:52.3},
+    {y:2020, v:38.9},  {y:2021, v:125.5}, {y:2022, v:303.95},{y:2023, v:125.96},
+    {y:2024, v:109.05},{y:2025, v:115.9}
+  ];
+
+  const labels = punData.map(d => d.y.toString());
+  const values = punData.map(d => d.v);
+  const avg = values.slice(0, -2).reduce((a,b)=>a+b,0) / (values.length - 2); // media 2004-2023
+
+  // Colors: red for 2022 peak, amber for >100, green-ish for rest
+  const colors = punData.map(d =>
+    d.v > 200 ? 'rgba(192,57,43,0.85)' :
+    d.v > 100 ? 'rgba(212,112,10,0.80)' :
+    'rgba(30,111,168,0.75)'
+  );
+
+  punChartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'PUN medio annuo (€/MWh)',
+          data: values,
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('0.75','1').replace('0.80','1').replace('0.85','1')),
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'Media 2004–2023: ' + avg.toFixed(1) + ' €/MWh',
+          data: Array(labels.length).fill(parseFloat(avg.toFixed(1))),
+          type: 'line',
+          borderColor: 'rgba(45,125,79,0.7)',
+          borderWidth: 2,
+          borderDash: [6,4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { font: {size:11}, color: '#6B6966', boxWidth: 16 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.type === 'line'
+              ? ' Media storica: ' + ctx.parsed.y.toFixed(1) + ' €/MWh'
+              : ' PUN ' + labels[ctx.dataIndex] + ': ' + ctx.parsed.y.toFixed(2) + ' €/MWh'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color:'#6B6966', font:{size:11} }
+        },
+        y: {
+          grid: { color:'rgba(0,0,0,0.05)' },
+          ticks: { color:'#6B6966', font:{size:11}, callback: v => v + ' €/MWh' },
+          title: { display: true, text: '€/MWh', color:'#6B6966', font:{size:11} }
+        }
+      }
+    }
+  });
+}
+
+function calcRata() {
+  const C = parseFloat(document.getElementById('capitaleFinanziato').value) || 0;
+  const r = (parseFloat(document.getElementById('tassoFin').value) || 0) / 100;
+  const n = Math.round(parseFloat(document.getElementById('durataFin').value) || 15);
+  // Annuity formula: rata = C * r*(1+r)^n / ((1+r)^n - 1)
+  let rata;
+  if (r === 0) {
+    rata = C / n;
+  } else {
+    rata = C * r * Math.pow(1+r, n) / (Math.pow(1+r, n) - 1);
+  }
+  const totRestituito = rata * n;
+  const interessi = totRestituito - C;
+  const fmt2 = v => isNaN(v)||!isFinite(v) ? '–' : '€ ' + Math.round(v).toLocaleString('it-IT');
+  const el = id => document.getElementById(id);
+  if (el('rataAnnuaDisplay')) el('rataAnnuaDisplay').textContent = fmt2(rata) + '/a';
+  if (el('totRestituito'))    el('totRestituito').textContent    = fmt2(totRestituito);
+  if (el('totInteressi'))     el('totInteressi').textContent     = fmt2(interessi);
+  // Store rata for calc()
+  window._rataCalcolata = rata;
+  calc();
+}
+
+function toggleFinanziamento() {
+  const v = document.getElementById('modalitaCosto').value;
+  document.getElementById('donazioniNote').style.display      = v === 'donazioni'   ? 'block' : 'none';
+  document.getElementById('finanziamentoSection').style.display = v === 'finanziato' ? 'block' : 'none';
+  if (v === 'finanziato') calcRata(); else calc();
+}
+
+function togglePDC() {
+  const has = document.getElementById('hasPDC').checked;
+  document.getElementById('pdcSection').style.display = has ? 'block' : 'none';
+  calc();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const g = id => parseFloat(document.getElementById(id).value) || 0;
+const gb = id => document.getElementById(id).checked;
+const e = (n, d=0) => isNaN(n)||!isFinite(n) ? '–' : (n<0?'-€ ':'€ ') + Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});
+const f = (n, d=0) => isNaN(n)||!isFinite(n) ? '–' : n.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+let chartInst = [];
+
+// ── MAIN CALCULATION ──────────────────────────────────────────────────────────
+function calc() {
+  // Inputs
+  const roofCoeff   = g('roofType');
+  const surface     = g('surface');
+  const kwhPerKwp   = g('orientation');
+  const kwp         = g('potInstallata');
+  const consumoPOD  = g('consumoPOD');
+  const costoPOD    = g('costoPOD');
+  const consumoAlt  = g('consumoAltri');
+  const costoAlt    = g('costoAltri');
+  const pe0         = g('prezzoEnergia');
+  const inflE       = g('inflEnergia') / 100;
+  const premio      = g('tariffaPremio');
+  const nord        = g('maggiNord');
+  const arera       = g('corrARERA');
+  const rid0        = g('prezzoRID');
+  const durInc      = Math.round(g('durataInc'));
+  const hasBatt     = gb('hasBatt');
+  const fisicoPct   = (hasBatt ? g('fisicoBatt') : g('fisico')) / 100;
+  const virtPct     = (hasBatt ? g('virtualeBatt') : g('virtuale')) / 100;
+  const ridPct      = Math.max(0, 1 - fisicoPct - virtPct);
+  const costoMat    = g('costoMat');
+  const costoInst   = g('costoInst');
+  const costoProg   = g('costoProg');
+  const iva         = g('ivaPerc') / 100;
+  const capBatt     = g('capacitaBatt');
+  const costoMod    = g('costoModulo');
+  const manut0      = g('costoManut') + g('costoGSE') + g('costoAssic');
+  const inflC       = g('inflCosti') / 100;
+  const deg         = g('degrado') / 100;
+  const inflCons    = g('aumentoConsumi') / 100;
+  const anni        = Math.round(g('anniSim'));
+  const annoRev     = Math.round(g('annoRev'));
+  const costoRev    = g('costoRev');
+  const hasPDC      = gb('hasPDC');
+  const annoPDC     = hasPDC ? Math.round(g('annoPDC')) : 0;
+  const incrementoPDC = hasPDC ? g('incrementoPDC') / 100 : 0;
+  const modalita    = document.getElementById('modalitaCosto').value;
+  const isFinanziato = modalita === 'finanziato';
+  const isDonazioni  = modalita === 'donazioni';
+  const rataAnnua   = isFinanziato ? (window._rataCalcolata || 0) : 0;
+  const durataFin   = isFinanziato ? Math.round(g('durataFin')) : 0;
+  // Derived
+  const potInstallabile = surface / roofCoeff;
+  const prodBase = kwp * kwhPerKwp;
+  const costoKwpLordo = (costoMat + costoInst + costoProg) * (1 + iva);
+  const costoImpBase = kwp * costoKwpLordo;
+  const modBatt = hasBatt ? Math.ceil(capBatt / 5) : 0;
+  const costoBatt = modBatt * costoMod;
+  const costoTotale = costoImpBase + (hasBatt ? costoBatt : 0);
+  // totInteressi now managed by calcRata()
+  const totInteressi = isFinanziato ? Math.max(0, rataAnnua * durataFin - costoTotale) : 0;
+
+  // Update sidebar computed fields
+  document.getElementById('potInstallabile').textContent = f(potInstallabile,1) + ' kWp';
+  if (hasPDC) {
+    const nc = (consumoPOD + costoAlt/pe0) * (1 + incrementoPDC);
+    document.getElementById('nuoviConsumi') && (document.getElementById('nuoviConsumi').textContent = f(consumoPOD*(1+incrementoPDC)) + ' kWh/a (+' + f(consumoPOD*incrementoPDC) + ')');
+  }
+  document.getElementById('ridDisplay').textContent = f(ridPct*100,0) + '%';
+  // kWh badges next to % fields
+  const _prod1 = kwp * kwhPerKwp; // year-1 production for display
+  const _setKwh = (id, pct) => { const el = document.getElementById(id); if(el) el.textContent = f(_prod1 * pct / 100) + ' kWh/a'; };
+  if (hasBatt) {
+    _setKwh('fisicoBattKwh',  parseFloat(document.getElementById('fisicoBatt').value)||0);
+    _setKwh('virtualeBattKwh', parseFloat(document.getElementById('virtualeBatt').value)||0);
+    const el = document.getElementById('ridKwh'); if(el) el.textContent = f(_prod1 * ridPct) + ' kWh/a';
+    // hide senza-batt badges
+    ['fisicoKwh','virtualeKwh'].forEach(id => { const e2=document.getElementById(id); if(e2) e2.textContent=''; });
+  } else {
+    _setKwh('fisicoKwh',   parseFloat(document.getElementById('fisico').value)||0);
+    _setKwh('virtualeKwh', parseFloat(document.getElementById('virtuale').value)||0);
+    const el = document.getElementById('ridKwh'); if(el) el.textContent = f(_prod1 * ridPct) + ' kWh/a';
+    // hide batt badges
+    ['fisicoBattKwh','virtualeBattKwh'].forEach(id => { const e2=document.getElementById(id); if(e2) e2.textContent=''; });
+  }
+  document.getElementById('costoTotDisplay').textContent = e(costoTotale);
+  // Auto-sync capitale finanziato with costo totale if user hasn't manually changed it
+  const _capEl = document.getElementById('capitaleFinanziato');
+  if (_capEl && document.getElementById('modalitaCosto') && document.getElementById('modalitaCosto').value === 'finanziato') {
+    if (!window._capManual) _capEl.value = Math.round(costoTotale);
+  }
+
+  const _kwpEl = document.getElementById('costoKwpDisplay');
+  if (_kwpEl) _kwpEl.textContent = e(costoKwpLordo, 0) + '/kWp' + (hasBatt ? ' (solo FV, senza batterie)' : '');
+  if (hasBatt) document.getElementById('battInfo').textContent = modBatt + ' mod. · ' + e(costoBatt);
+
+  // ── SIMULATION ────────────────────────────────────────────────
+  // Cash flow = benefici cumulati - costo impianto
+  // Beneficio annuo = risparmio fisico + entrate GSE virtuale + RID - costi operativi - revamping
+  const rows = [];
+  // Anno 0: donazioni = nessun esborso; finanziamento = nessun esborso iniziale (rate negli anni); fondi propri = esborso pieno
+  let cashFlowCum = (isDonazioni || isFinanziato) ? 0 : -costoTotale;
+  let bollSenzaCum = 0; // spesa cumulata bollette senza impianto
+  let payback = null;
+  let cf20 = null, cf30 = null;
+
+  for (let y = 0; y <= anni; y++) {
+    const pe      = pe0 * Math.pow(1 + inflE, y);
+    const prod    = y === 0 ? prodBase : prodBase * Math.pow(1 - deg, y);
+    const manut   = y === 0 ? 0 : manut0 * Math.pow(1 + inflC, y);
+    const revCost = (y === annoRev && y > 0) ? costoRev : 0;
+
+    const kFisico   = prod * fisicoPct;
+    const kVirtuale = prod * virtPct;
+    const kRID      = prod * ridPct;
+
+    const inFisico  = kFisico * pe;
+    const incActive = y > 0 && y <= durInc;
+    const tarifTot  = incActive ? (premio + nord + arera) : 0;
+    const inGSE     = kVirtuale * tarifTot;
+    const inRID     = kRID * rid0; // RID non indicizzato (prezzo spot stabile)
+
+    const rata = (isFinanziato && y > 0 && y <= durataFin) ? rataAnnua : 0;
+    const benefAnnuo = y === 0 ? 0 : (inFisico + inGSE + inRID - manut - revCost - rata);
+
+    if (y > 0) cashFlowCum += benefAnnuo;
+
+    if (payback === null && y > 0 && cashFlowCum >= 0) payback = y;
+    if (y === 20) cf20 = cashFlowCum;
+    if (y === anni) cf30 = cashFlowCum;
+
+    // Consumi con eventuale salto PDC: dal year annoPDC in poi i consumi aumentano di incrementoPDC
+    const pdcFactor = (hasPDC && y >= annoPDC) ? (1 + incrementoPDC) : 1;
+    const bollBase  = (costoPOD + costoAlt) * pdcFactor;
+    const bollSenza = bollBase * Math.pow(1 + inflE, Math.max(0,y));
+    const isPDCyear = hasPDC && y === annoPDC;
+    if (y > 0) bollSenzaCum += bollSenza;
+
+    const consPOD = consumoPOD * pdcFactor * Math.pow(1 + inflCons, Math.max(0,y));
+    const consAlt2 = consumoAlt * pdcFactor * Math.pow(1 + inflCons, Math.max(0,y));
+    const consTot = consPOD + consAlt2;
+    rows.push({ y, pe, prod, kFisico, kVirtuale, kRID, inFisico, inGSE, inRID, manut, revCost, benefAnnuo, cashFlowCum, incActive, bollSenza, bollSenzaCum, isPDCyear, consPOD, consTot });
+  }
+
+  const r1 = rows[1];
+  const benefY1 = r1 ? r1.inFisico + r1.inGSE + r1.inRID - r1.manut : 0;
+  const prodY1  = r1 ? r1.prod : prodBase;
+
+  // ── ALERTS ────────────────────────────────────────────────────
+  const alerts = [];
+  const maxFisico = consumoPOD > 0 ? (prodBase * fisicoPct / consumoPOD) * 100 : 0;
+  if (maxFisico > 100) alerts.push({type:'warn', text:`⚠️ Autoconsumo fisico impossibile: stai usando ${f(prodBase*fisicoPct)} kWh direttamente ma il POD consuma solo ${f(consumoPOD)} kWh/anno. Riduci la percentuale.`});
+  else if (maxFisico > 80) alerts.push({type:'warn', text:`⚠️ Autoconsumo fisico elevato (${f(maxFisico,0)}% dei consumi POD): verifica che i consumi coincidano con le ore di produzione solare (8-18).`});
+  if (ridPct < 0) alerts.push({type:'warn', text:'⚠️ Autoconsumo fisico + virtuale supera 100%. Riduci le percentuali.'});
+  if (kwp > potInstallabile * 1.05) alerts.push({type:'info', text:`ℹ️ Potenza inserita (${f(kwp,0)} kWp) supera quella installabile dalla superficie (${f(potInstallabile,1)} kWp). Verifica la superficie disponibile.`});
+
+  // ── HTML OUTPUT ───────────────────────────────────────────────
+  let html = '';
+
+  if (alerts.length) {
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+    alerts.forEach(a => { html += `<div class="alert alert-${a.type}"><span>${a.text}</span></div>`; });
+    html += '</div>';
+  }
+
+  // ── UNIFICATO BANNER ─────────────────────────────────────────────────────────
+  if (consumoAlt === 0 && consumoPOD > 20000) {
+    html += `<div class="alert" style="background:var(--blue-light);border:1px solid rgba(30,111,168,.2);color:var(--blue);gap:10px;">
+      <span style="font-size:18px;flex-shrink:0;">🔌</span>
+      <span><strong>Scenario POD unico aggregato</strong> — tutti i contatori della parrocchia confluiscono in un unico POD collegato all\'impianto. Autoconsumo fisico massimizzato: tutta la produzione viene confrontata con i consumi aggregati di <strong>${f(consumoPOD)} kWh/anno</strong>. Costo aggiuntivo stimato per l\'unificazione: <strong>€8.000–15.000</strong> (cavi, scavi su suolo privato, EMS, modifica contratto e-distribuzione).</span>
+    </div>`;
+  }
+
+  // ── KPI ──────────────────────────────────────────────────────────────────────
+  // Produzione annua media (degrado incluso)
+  const prodMedia = rows.filter(r=>r.y>0).reduce((s,r)=>s+r.prod,0) / anni;
+
+  const pb = payback ? payback + ' anni' : '>' + anni + ' anni';
+  const pbClass = payback && payback <= 15 ? 'pos' : payback && payback <= 20 ? 'warn' : '';
+
+  html += `<div class="kpi-row">
+    <div class="kpi-card" style="cursor:default;">
+      <div class="kpi-label" style="display:flex;align-items:center;gap:5px;">Produzione annua media <button class="tip-btn" onclick="tip(this,'kpi_prod')">?</button></div>
+      <div class="kpi-value">${f(prodMedia)} <span style="font-size:13px;font-weight:400;">kWh</span></div>
+      <div class="kpi-sub">${f(prodMedia/kwp,0)} kWh/kWp · ${f(kwp,0)} kWp installati</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Beneficio totale (${anni} anni)</div>
+      <div class="kpi-value ${cf30>=0?'pos':'neg'}">${e(cf30)}</div>
+      <div class="kpi-sub">Dopo recupero investimento</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Costo impianto</div>
+      <div class="kpi-value">${e(costoTotale)}</div>
+      <div class="kpi-sub">${e(costoTotale/kwp,0)}/kWp · IVA ${f(iva*100,0)}% inclusa</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Payback</div>
+      <div class="kpi-value ${pbClass}">${pb}</div>
+      <div class="kpi-sub">Anni per recuperare l'investimento</div>
+    </div>
+  </div>`;
+
+  // ── RIPARTIZIONE ─────────────────────────────────────────────────────────────
+  const revampingInfo = (annoRev > 0 && annoRev <= anni)
+    ? `<div class="summary-row"><span class="lbl">Revamping inverter</span><span class="val">anno ${annoRev} · ${e(costoRev)}</span></div>`
+    : `<div class="summary-row"><span class="lbl">Revamping inverter</span><span class="val dim-cell">non previsto</span></div>`;
+
+  html += `<div class="summary-section" style="background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:16px;">
+    <h4 style="font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Ripartizione produzione (media annua)</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+      <div class="summary-row"><span class="lbl">Autoconsumo fisico (${f(fisicoPct*100,0)}%)</span><span class="val">${f(prodMedia*fisicoPct)} kWh/a</span></div>
+      <div class="summary-row"><span class="lbl">Incentivi GSE attivi per</span><span class="val">${durInc} anni</span></div>
+      <div class="summary-row"><span class="lbl">Autoconsumo virtuale CER (${f(virtPct*100,0)}%)</span><span class="val">${f(prodMedia*virtPct)} kWh/a</span></div>
+      ${revampingInfo}
+      <div class="summary-row"><span class="lbl">Vendita RID (${f(ridPct*100,0)}%)</span><span class="val">${f(prodMedia*ridPct)} kWh/a</span></div>
+      <div class="summary-row"><span class="lbl">Costi operativi annui (base)</span><span class="val neg">-${e(manut0)}</span></div>
+    </div>
+  </div>`;
+
+  // Battery note box (shown only if batteries enabled)
+  if (hasBatt) {
+    html += `<div style="background:var(--blue-light);border:1px solid rgba(30,111,168,.2);border-radius:12px;padding:14px 18px;">
+      <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px;">⚡ Note sul calcolo autoconsumo con batterie</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:12px;color:var(--blue);">
+        <div><b>Fisico ${f(fisicoPct*100,0)}%</b> — La batteria (${f(capBatt,0)} kWh) si carica di giorno e scarica la sera durante funzioni, riscaldamento e illuminazione. Con consumi serali stimati ~15-20 kWh/sera, la copertura è quasi totale.</div>
+        <div><b>Virtuale CER ${f(virtPct*100,0)}%</b> — Si riduce rispetto allo scenario senza batterie: l'energia viene ora trattenuta fisicamente dall'accumulo invece di essere condivisa virtualmente con gli altri POD.</div>
+        <div style="margin-top:4px;"><b>RID ${f(ridPct*100,0)}%</b> — Solo l'eccedenza che la batteria non riesce ad assorbire viene venduta alla rete al prezzo di mercato.</div>
+        <div style="margin-top:4px;"><b>Valori realistici per questa parrocchia:</b> fisico 55-65%, virtuale 15-20%, RID 15-25%. I valori attuali sono ${f(fisicoPct*100,0)}% / ${f(virtPct*100,0)}% / ${f(ridPct*100,0)}%.</div>
+      </div>
+    </div>`;
+  } else {
+    html += `<div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:14px 18px;">
+      <div style="font-size:12px;font-weight:600;color:var(--gray-700);margin-bottom:8px;">☀️ Note sul calcolo autoconsumo senza batterie</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;font-size:12px;color:var(--gray-500);">
+        <div><b>Fisico ${f(fisicoPct*100,0)}%</b> — Solo le utenze accese nelle ore di produzione solare (8-18h): qualche luce, router, frigorifero sacrestia. Per una parrocchia con consumi serali il valore realistico è 5-10%.</div>
+        <div><b>Virtuale CER ${f(virtPct*100,0)}%</b> — Energia condivisa con gli altri POD della CER (canonica, uffici) durante le ore di produzione. Se anche questi POD consumano prevalentemente di sera, il valore realistico è 40-55%.</div>
+        <div style="margin-top:4px;"><b>RID ${f(ridPct*100,0)}%</b> — Quota venduta alla rete nelle ore centrali della giornata al prezzo di mercato (Ritiro Dedicato GSE).</div>
+        <div style="margin-top:4px;"><b>Con batterie</b> il fisico salirebbe a 55-65% e il virtuale scenderebbe a 15-20%, migliorando significativamente il risparmio diretto in bolletta.</div>
+      </div>
+    </div>`;
+  }
+
+  // Charts
+  html += `<div style="display:flex;flex-direction:column;gap:16px;">
+
+    <div class="chart-card">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px;">
+        <div class="chart-title">📊 Spesa cumulata: con impianto vs. senza impianto</div>
+      </div>
+      <div class="chart-subtitle">Confronto della spesa totale nei ${anni} anni nei due scenari — il divario cresce con l'inflazione energetica</div>
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot" style="background:#C0392B;"></div>Senza impianto (bollette cumulate)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2D7D4F;"></div>Con impianto (costo netto cumulato)</div>
+      </div>
+      <div style="position:relative;width:100%;height:320px;">
+        <canvas id="cmpChart" role="img" aria-label="Confronto spesa cumulata con e senza impianto"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">💰 Cash flow cumulativo dell'investimento</div>
+      <div class="chart-subtitle">Parte negativo (esborso impianto), diventa positivo al payback — il valore finale è il guadagno netto a ${anni} anni</div>
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot" style="background:#2D7D4F;"></div>Cash flow cumulativo</div>
+        ${annoRev>0&&annoRev<=anni?'<div class="legend-item"><div class="legend-dot" style="background:rgba(30,111,168,.6);"></div>Revamping inverter (anno '+annoRev+')</div>':''}
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(232,160,32,.6);"></div>Fine incentivi GSE (anno ${durInc})</div>
+      </div>
+      <div style="position:relative;width:100%;height:320px;">
+        <canvas id="cfChart" role="img" aria-label="Grafico cash flow cumulativo su ${anni} anni"></canvas>
+      </div>
+    </div>
+
+  </div>`;
+
+  // Table
+  html += `<div class="table-card">
+    <div class="table-head">Dettaglio annuale <span style="font-size:11px;font-weight:400;color:var(--gray-500);">🟡 fine incentivi · 🔵 revamping${hasPDC?' · 🌡️ installazione PDC':''}</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="text-align:center;">Anno</th>
+        <th><span class="th-wrap">€/kWh <button class="tip-btn th-tip" onclick="tip(this,'col_prezzo')">?</button></span></th>
+        <th><span class="th-wrap">Produzione <button class="tip-btn th-tip" onclick="tip(this,'col_prod')">?</button></span></th>
+        <th><span class="th-wrap">Cons. POD <button class="tip-btn th-tip" onclick="tip(this,'col_cons')">?</button></span></th>
+        <th><span class="th-wrap">Cons. totale <button class="tip-btn th-tip" onclick="tip(this,'col_constot')">?</button></span></th>
+        <th><span class="th-wrap">Risp. fisico <button class="tip-btn th-tip" onclick="tip(this,'col_fisico')">?</button></span></th>
+        <th><span class="th-wrap">GSE virtuale <button class="tip-btn th-tip" onclick="tip(this,'col_gse')">?</button></span></th>
+        <th><span class="th-wrap">RID <button class="tip-btn th-tip" onclick="tip(this,'col_rid')">?</button></span></th>
+        <th><span class="th-wrap">Costi op. <button class="tip-btn th-tip" onclick="tip(this,'col_costi')">?</button></span></th>
+        <th><span class="th-wrap">Beneficio <button class="tip-btn th-tip" onclick="tip(this,'col_beneficio')">?</button></span></th>
+        <th><span class="th-wrap">Bollette senza imp. <button class="tip-btn th-tip" onclick="tip(this,'col_boll')">?</button></span></th>
+        <th><span class="th-wrap">Cash flow <button class="tip-btn th-tip" onclick="tip(this,'col_cf')">?</button></span></th>
+      </tr></thead>
+      <tbody>`;
+
+  rows.forEach(r => {
+    if (r.y === 0) {
+      html += `<tr>
+        <td>0</td>
+        <td>${r.pe.toFixed(3)}</td>
+        <td>${f(r.prod)}</td>
+        <td>${f(r.consPOD)}</td>
+        <td>${f(r.consTot)}</td>
+        <td class="dim-cell">–</td>
+        <td class="dim-cell">–</td>
+        <td class="dim-cell">–</td>
+        <td class="dim-cell">–</td>
+        <td class="dim-cell">${isDonazioni ? '🙏 donazioni' : isFinanziato ? '🏦 finanziato' : 'esborso'}</td>
+        <td class="dim-cell">–</td>
+        <td class="${r.cashFlowCum>=0?'pos-cell':'neg-cell'}">${e(r.cashFlowCum)}</td>
+      </tr>`;
+      return;
+    }
+    const cl = r.y===durInc ? 'row-incend' : r.y===annoRev ? 'row-rev' : r.isPDCyear ? 'row-pdc' : '';
+    const lbl = (r.y===durInc?' 🟡':'') + (r.y===annoRev?' 🔵':'') + (r.isPDCyear?' 🌡️':'');
+    html += `<tr class="${cl}">
+      <td>${r.y}${lbl}</td>
+      <td>${r.pe.toFixed(3)}</td>
+      <td>${f(r.prod)}</td>
+      <td>${f(r.consPOD)}</td>
+      <td>${f(r.consTot)}</td>
+      <td class="pos-cell">${e(r.inFisico)}</td>
+      <td class="${r.incActive?'pos-cell':'dim-cell'}">${e(r.inGSE)}</td>
+      <td>${e(r.inRID)}</td>
+      <td class="neg-cell">-${e(r.manut+r.revCost)}</td>
+      <td class="${r.benefAnnuo>=0?'pos-cell':'neg-cell'}">${e(r.benefAnnuo)}</td>
+      <td class="neg-cell">-${e(r.bollSenzaCum)}</td>
+      <td class="${r.cashFlowCum>=0?'pos-cell':'neg-cell'}">${e(r.cashFlowCum)}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div></div>`;
+  document.getElementById('content').innerHTML = html;
+
+  // ── CHART.JS ──────────────────────────────────────────────────
+  if (chartInst) {
+    chartInst.forEach(c => c && c.destroy());
+    chartInst = [];
+  }
+
+  const labels = rows.map(r => 'A' + r.y);
+
+  // Shared tick config
+  const xTicks = {color:'#6B6966',font:{size:10},maxTicksLimit:12};
+  const yTicks = {color:'#6B6966',font:{size:10},callback:v=>e(v)};
+  const gridX  = {color:'rgba(0,0,0,0.04)'};
+  const gridY  = {color:'rgba(0,0,0,0.05)'};
+
+  // ── Chart 1: Confronto spesa cumulata ─────────────────────────
+  // "Senza impianto": spesa cumulata bollette (anno 0 = 0, poi cresce)
+  // "Con impianto":   costo impianto + bollette ridotte - benefici = -cashFlow + bollSenzaCum... 
+  // Più semplice: spesa CON impianto = costo impianto + bollette pagate (ridotte dall'autoconsumo fisico)
+  // = costoTotale + bollSenzaCum - risparmioFisicoSum fino a N
+  // Usiamo: spesaCon(N) = -cashFlowCum(N) + bollSenzaCum(N) ... no.
+  // Approccio diretto: spesaSenza(N) = Σ bollette · spesaCon(N) = costoTotale + Σ(bollette - rispFisico - GSE - RID + costiOp)
+  // Ma costoTotale + Σ(bollSenza - benefAnnuo) = costoTotale + bollSenzaCum - cashFlowCum - costoTotale = bollSenzaCum - cashFlowCum
+  // Quindi: spesaCon(N) = bollSenzaCum(N) - cashFlowCum(N)
+  const dataSenza = rows.map(r => Math.round(r.bollSenzaCum));
+  const dataCon   = rows.map(r => Math.round(r.bollSenzaCum - r.cashFlowCum));
+
+  const cmpCanvas = document.getElementById('cmpChart');
+  if (cmpCanvas) {
+    chartInst.push(new Chart(cmpCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'Senza impianto', data: dataSenza, borderColor:'#C0392B', backgroundColor:'rgba(192,57,43,0.06)', fill:true, tension:0.3, pointRadius:1, borderWidth:2 },
+          { label:'Con impianto',   data: dataCon,   borderColor:'#2D7D4F', backgroundColor:'rgba(45,125,79,0.08)', fill:true, tension:0.3, pointRadius:1, borderWidth:2 }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label: c => ' ' + c.dataset.label + ': ' + e(c.parsed.y) } }
+        },
+        scales: {
+          x:{ grid:gridX, ticks:xTicks },
+          y:{ grid:gridY, ticks:yTicks, min:0 }
+        }
+      }
+    }));
+  }
+
+  // ── Chart 2: Cash flow cumulativo ─────────────────────────────
+  const cfCanvas = document.getElementById('cfChart');
+  if (cfCanvas) {
+    chartInst.push(new Chart(cfCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label:'Cash flow',
+          data: rows.map(r => Math.round(r.cashFlowCum)),
+          borderColor:'#2D7D4F',
+          backgroundColor: ctx => {
+            const {chartArea} = ctx.chart;
+            if (!chartArea) return 'rgba(45,125,79,0.08)';
+            const g = ctx.chart.ctx.createLinearGradient(0,chartArea.top,0,chartArea.bottom);
+            g.addColorStop(0,'rgba(45,125,79,0.15)');
+            g.addColorStop(1,'rgba(45,125,79,0.01)');
+            return g;
+          },
+          fill:true, tension:0.3, pointRadius:1, borderWidth:2
+        }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label: c => ' Cash flow: ' + e(c.parsed.y) } }
+        },
+        scales: {
+          x:{ grid:gridX, ticks:xTicks },
+          y:{ grid:gridY, ticks:yTicks }
+        }
+      }
+    }));
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+calcAutoconsumo();
+calc();
+</script>
+</body>
+</html>

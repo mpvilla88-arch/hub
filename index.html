@@ -256,6 +256,16 @@
     background: rgba(167,139,250,0.08);
   }
   .link-btn.prod:hover { border-color: rgba(167,139,250,0.6); }
+  .link-btn.git {
+    border-color: rgba(255,255,255,0.12);
+    color: var(--sub);
+  }
+  .link-btn.dev {
+    border-color: rgba(16,185,129,0.35);
+    color: #10b981;
+    background: rgba(16,185,129,0.08);
+  }
+  .link-btn.dev:hover { border-color: rgba(16,185,129,0.6); }
 
   /* ── EMPTY ── */
   .empty {
@@ -315,10 +325,9 @@ async function loadProjects() {
       <div class="section-label">Progetti</div>
       <div class="projects-grid">
         ${projects.map(p => {
-          const devBtn = p.links?.dev
-            ? `<a class="link-btn" href="${p.links.dev}" target="_blank">↗ dev</a>` : '';
-          const prodBtn = p.links?.prod
-            ? `<a class="link-btn prod" href="${p.links.prod}" target="_blank">↗ prod</a>` : '';
+          const gitBtn  = p.links?.git  ? `<a class="link-btn git"  href="${p.links.git}"  target="_blank">↗ git</a>`  : '';
+          const devBtn  = p.links?.dev  ? `<a class="link-btn dev"  href="${p.links.dev}"  target="_blank">↗ dev</a>`  : '';
+          const prodBtn = p.links?.prod ? `<a class="link-btn prod" href="${p.links.prod}" target="_blank">↗ prod</a>` : '';
           const dot = PRIORITY_DOT[p.priority] || '#64748b';
           return `
             <div class="project-card" style="--accent:${p.color}">
@@ -329,7 +338,7 @@ async function loadProjects() {
                 <div class="priority-dot" style="background:${dot};"></div>
                 <span class="priority-label">${p.priority}</span>
               </div>
-              <div class="project-links">${devBtn}${prodBtn}</div>
+              <div class="project-links">${gitBtn}${devBtn}${prodBtn}</div>
             </div>`;
         }).join('')}
       </div>`;

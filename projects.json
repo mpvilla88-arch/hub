@@ -43,7 +43,7 @@
     "priority": "bassa",
     "links": {
       "git": "https://github.com/mpvilla88-arch/zona-app",
-      "dev": "",
+      "dev": "https://dev.zonapp.it",
       "prod": "https://www.zonapp.it"
     }
   },

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bilanci — Zona Verona Custoza</title>
+<style>
+  :root {
+    --verde:    #2D6A4F;
+    --verde-lt: #52B788;
+    --verde-bg: #D8F3DC;
+    --giallo:   #F4A621;
+    --testo:    #1B2B1E;
+    --grigio:   #6B7C6E;
+    --riga-alt: #F0FAF2;
+    --bianco:   #FFFFFF;
+    --bordo:    #B7DFC0;
+    --rosso:    #C0392B;
+    --blu:      #1A3C5E;
+    --arancio:  #C05A00;
+    --arancio-lt: #FFF3E6;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F4FAF5; color: var(--testo); font-size: 14px; }
+
+  nav {
+    background: var(--verde); display: flex; gap: 2px; padding: 0 24px;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  nav button {
+    background: none; border: none; color: rgba(255,255,255,.7); font-size: 13px;
+    font-weight: 600; padding: 14px 18px; cursor: pointer;
+    border-bottom: 3px solid transparent; transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  nav button.active, nav button:hover { color: #fff; border-bottom-color: var(--giallo); }
+
+  .page { display: none; padding: 32px 24px 64px; max-width: 960px; margin: 0 auto; }
+  .page.active { display: block; }
+  h1 { font-size: 22px; font-weight: 700; color: var(--verde); margin-bottom: 4px; }
+  h1.arancio { color: var(--arancio); }
+  .sottotitolo { color: var(--grigio); font-size: 13px; margin-bottom: 24px; }
+
+  /* ── TABELLA GENERICA ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  table { width: 100%; border-collapse: collapse; background: var(--bianco); font-size: 13px; }
+  thead tr.head-main th { background: var(--verde); color: #fff; font-weight: 700; padding: 12px 14px; text-align: center; }
+  thead tr.head-main th:first-child { text-align: left; }
+  thead tr.head-main.arancio th { background: var(--arancio); }
+  thead tr.head-sub th { background: #E8F4EA; color: var(--grigio); font-size: 11px; font-weight: 700; padding: 6px 14px; border-bottom: 2px solid var(--bordo); text-align: right; }
+  thead tr.head-sub.arancio th { background: #FFF0E0; border-bottom-color: #F0C890; }
+  thead tr.head-sub th:first-child { text-align: left; }
+  tbody tr td { padding: 10px 14px; border-bottom: 1px solid #E2F0E4; vertical-align: middle; }
+  tbody tr:nth-child(even) { background: var(--riga-alt); }
+  tbody tr:hover { background: #C8EDD0; }
+  td.voce { font-weight: 500; min-width: 280px; }
+  td.num { text-align: right; min-width: 110px; font-variant-numeric: tabular-nums; }
+  td.entrata { color: var(--verde); }
+  td.uscita  { color: var(--rosso); }
+  td.saldo-pos  { color: var(--verde); font-weight: 600; }
+  td.saldo-neg  { color: var(--rosso); font-weight: 600; }
+  td.saldo-zero { color: var(--grigio); }
+  td.link-det { text-align: right; padding: 0 14px; width: 70px; }
+  td.link-det button { background: none; border: none; color: var(--verde-lt); font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0; }
+  td.link-det button:hover { color: var(--verde); }
+  tfoot tr td { font-weight: 700; font-size: 13px; padding: 12px 14px; border-top: 2px solid var(--verde); background: #EAF6EC; text-align: right; }
+  tfoot tr td:first-child { text-align: left; color: var(--verde); }
+  tfoot.arancio tr td { border-top-color: var(--arancio); background: #FFF3E6; }
+  tfoot.arancio tr td:first-child { color: var(--arancio); }
+  tfoot td.entrata { color: var(--verde); }
+  tfoot td.uscita  { color: var(--rosso); }
+
+  /* ── INPUT CONSUNTIVO inline ── */
+  td .num-input-wrap { position: relative; display: inline-flex; align-items: center; }
+  td .num-input-wrap span { position: absolute; left: 7px; color: var(--grigio); font-size: 12px; pointer-events: none; }
+  td input.cons {
+    width: 110px; padding: 5px 6px 5px 20px; border: 1.5px solid #E0E0E0;
+    border-radius: 6px; font-size: 13px; text-align: right; color: var(--testo);
+    background: #FAFFFE; -moz-appearance: textfield;
+    font-variant-numeric: tabular-nums;
+  }
+  td input.cons::-webkit-inner-spin-button { display: none; }
+  td input.cons:focus { outline: none; border-color: var(--verde-lt); box-shadow: 0 0 0 2px rgba(82,183,136,.18); }
+  td input.cons.e:focus { border-color: var(--verde); }
+  td input.cons.u:focus { border-color: var(--rosso); }
+
+  /* ── BLOCCHI DETTAGLIO ── */
+  .voce-block { background: var(--bianco); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.07); margin-bottom: 16px; overflow: hidden; }
+  .voce-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #EAF6EC; border-bottom: 2px solid var(--bordo); cursor: pointer; user-select: none; }
+  .voce-header:hover { background: #D4EED8; }
+  .voce-title { font-weight: 700; font-size: 14px; color: var(--verde); }
+  .voce-totali { display: flex; gap: 20px; align-items: center; }
+  .voce-tot-item { text-align: right; }
+  .voce-tot-item .lbl { font-size: 10px; color: var(--grigio); font-weight: 600; text-transform: uppercase; }
+  .voce-tot-item .val { font-size: 14px; font-weight: 700; }
+  .voce-tot-item.e .val { color: var(--verde); }
+  .voce-tot-item.u .val { color: var(--rosso); }
+  .chevron { font-size: 12px; color: var(--grigio); transition: transform .2s; margin-left: 12px; }
+  .voce-block.open .chevron { transform: rotate(180deg); }
+  .voce-body { display: none; padding: 16px 18px; }
+  .voce-block.open .voce-body { display: block; }
+
+  /* sottovoci */
+  .sottovoci { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .sottovoci th { font-size: 11px; font-weight: 700; color: var(--grigio); text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 1px solid var(--bordo); text-align: left; }
+  .sottovoci th.num { text-align: right; }
+  .sottovoci td { padding: 6px 8px; border-bottom: 1px solid #EEF5EE; vertical-align: middle; }
+  .sottovoci tr:last-child td { border-bottom: none; }
+  .sottovoci td input[type="text"] { width: 100%; border: 1.5px solid #C8DFC8; border-radius: 6px; padding: 6px 8px; font-size: 13px; color: var(--testo); background: #FAFFFE; }
+  .sottovoci td input[type="text"]:focus { outline: none; border-color: var(--verde-lt); box-shadow: 0 0 0 2px rgba(82,183,136,.18); }
+  .euro-wrap { position: relative; }
+  .euro-wrap span { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--grigio); font-weight: 600; pointer-events: none; font-size: 13px; }
+  .sottovoci td input[type="number"] { width: 100%; padding: 6px 8px 6px 22px; border: 1.5px solid #C8DFC8; border-radius: 6px; font-size: 13px; color: var(--testo); background: #FAFFFE; -moz-appearance: textfield; }
+  .sottovoci td input[type="number"]::-webkit-inner-spin-button { display: none; }
+  .sottovoci td input[type="number"]:focus { outline: none; border-color: var(--verde-lt); box-shadow: 0 0 0 2px rgba(82,183,136,.18); }
+  .col-e { width: 130px; } .col-u { width: 130px; } .col-del { width: 36px; text-align: center; }
+  .btn-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 16px; padding: 0 4px; transition: color .15s; }
+  .btn-del:hover { color: var(--rosso); }
+  .btn-add { background: none; border: 1.5px dashed var(--bordo); border-radius: 7px; color: var(--verde-lt); font-size: 12px; font-weight: 600; padding: 7px 14px; cursor: pointer; transition: border-color .15s, color .15s; width: 100%; margin-top: 4px; }
+  .btn-add:hover { border-color: var(--verde); color: var(--verde); }
+
+  /* ── CALCOLATORE ASSEMBLEA ── */
+  .asm-wrap { border: 2px solid #C5DFF5; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+  .asm-section-title { background: #1A3C5E; color: #fff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 8px 14px; }
+  .asm-params { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; padding: 16px; background: #F0F6FF; }
+  .asm-field label { display: block; font-size: 11px; font-weight: 700; color: var(--grigio); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  .asm-field input { width: 100%; border: 1.5px solid #B0CCEC; border-radius: 7px; padding: 8px 10px; font-size: 14px; font-weight: 600; color: var(--blu); background: #fff; -moz-appearance: textfield; }
+  .asm-field input::-webkit-inner-spin-button { display: none; }
+  .asm-field input:focus { outline: none; border-color: #3A6BC8; box-shadow: 0 0 0 2px rgba(58,107,200,.18); }
+  .asm-field .hint { font-size: 11px; color: var(--grigio); margin-top: 3px; min-height: 16px; }
+  .asm-calc { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .asm-col { padding: 16px; }
+  .asm-col.uscite-col { background: #FFF5F5; border-left: 1px solid #EED0D0; }
+  .asm-col.entrate-col { background: #F2FBF4; }
+  .asm-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid; }
+  .uscite-col .asm-col-title { color: var(--rosso); border-color: #F0BCBC; }
+  .entrate-col .asm-col-title { color: var(--verde); border-color: var(--bordo); }
+  .asm-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+  .asm-line label { font-size: 12px; color: var(--testo); flex: 1; }
+  .asm-line .computed { font-size: 14px; font-weight: 700; min-width: 90px; text-align: right; }
+  .asm-line .computed.rosso { color: var(--rosso); }
+  .asm-line .computed.verde { color: var(--verde); }
+  .asm-line input.quota { width: 110px; border: 1.5px solid #C8DFC8; border-radius: 6px; padding: 6px 8px 6px 20px; font-size: 14px; font-weight: 700; color: var(--verde); background: #fff; -moz-appearance: textfield; text-align: right; }
+  .asm-line input.quota::-webkit-inner-spin-button { display: none; }
+  .asm-line input.quota:focus { outline: none; border-color: var(--verde-lt); box-shadow: 0 0 0 2px rgba(82,183,136,.18); }
+  .quota-wrap { position: relative; display: inline-block; }
+  .quota-wrap .eur { position: absolute; left: 7px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--grigio); pointer-events: none; }
+  .asm-subtotal { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid; font-weight: 700; font-size: 14px; }
+  .uscite-col .asm-subtotal { border-color: #F0BCBC; color: var(--rosso); }
+  .entrate-col .asm-subtotal { border-color: var(--bordo); color: var(--verde); }
+  .asm-result { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #1A3C5E; color: #fff; }
+  .asm-result .lbl { font-size: 12px; font-weight: 600; opacity: .8; }
+  .asm-result .big { font-size: 20px; font-weight: 700; }
+  .asm-nota { font-size: 11px; color: var(--grigio); background: #F7FBFF; padding: 10px 16px; border-top: 1px solid #D0E4F8; font-style: italic; }
+  .section-sep { font-size: 12px; font-weight: 700; color: var(--grigio); text-transform: uppercase; letter-spacing: .05em; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--bordo); }
+
+  .bar-azioni { display: flex; justify-content: flex-end; gap: 12px; margin-top: 28px; }
+  button.primary { background: var(--verde); color: #fff; border: none; border-radius: 8px; padding: 12px 28px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .2s; }
+  button.primary:hover { background: #1e4d38; }
+
+  /* ── NOTE ── */
+  .note-box { margin-top: 28px; }
+  .note-box label { display: block; font-size: 12px; font-weight: 700; color: var(--grigio); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .note-box textarea { width: 100%; min-height: 90px; border: 1.5px solid var(--bordo); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--testo); background: var(--bianco); resize: vertical; font-family: inherit; line-height: 1.5; }
+  .note-box textarea:focus { outline: none; border-color: var(--verde-lt); box-shadow: 0 0 0 2px rgba(82,183,136,.18); }
+
+  /* ── NAV AZIONI SALVA/CARICA ── */
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 6px; padding: 8px 0; }
+  .nav-right button { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: background .15s; white-space: nowrap; }
+  .nav-right button:hover { background: rgba(255,255,255,.28); }
+  .nav-right label { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: background .15s; white-space: nowrap; }
+  .nav-right label:hover { background: rgba(255,255,255,.28); }
+</style>
+</head>
+<body>
+
+<nav>
+  <button class="active" onclick="showPage('p1',this)">📊 Sintetico 2027</button>
+  <button onclick="showPage('p2',this)">✏️ Dettaglio 2027</button>
+  <button onclick="showPage('p3',this)">📋 Consuntivo 2025‑26</button>
+  <div class="nav-right">
+    <button onclick="salvaJSON()" title="Scarica un file JSON con tutti i dati">💾 Salva</button>
+    <label title="Carica un file JSON precedentemente salvato">📂 Carica<input type="file" accept=".json" style="display:none" onchange="caricaJSON(this)"></label>
+  </div>
+</nav>
+
+<!-- ═══════════════════ P1: SINTETICO PREVENTIVO 2027 ═══════════════════ -->
+<div id="p1" class="page active">
+  <h1>Preventivo 2027</h1>
+  <p class="sottotitolo">Zona Verona Custoza · quadro sintetico</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr class="head-main"><th>Voce</th><th colspan="3">Preventivo al 30/09/2027</th><th></th></tr>
+        <tr class="head-sub"><th>—</th><th>Entrate</th><th>Uscite</th><th>Saldo</th><th></th></tr>
+      </thead>
+      <tbody id="tabella-corpo"></tbody>
+      <tfoot>
+        <tr>
+          <td>Totale</td>
+          <td class="num entrata" id="tot-e">—</td>
+          <td class="num uscita"  id="tot-u">—</td>
+          <td class="num"         id="tot-s">—</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+  <div class="note-box">
+    <label>📝 Note — Preventivo 2027</label>
+    <textarea id="note-p1" placeholder="Annotazioni generali sul preventivo…" oninput="NOTE.p1=this.value"></textarea>
+<!-- ═══════════════════ P2: DETTAGLIO PREVENTIVO 2027 ═══════════════════ -->
+<div id="p2" class="page">
+  <h1>Dettaglio voci — Preventivo 2027</h1>
+  <p class="sottotitolo">Inserisci entrate e uscite · i totali aggiornano automaticamente il sintetico</p>
+  <div id="blocchi"></div>
+  <div class="bar-azioni">
+    <button class="primary" onclick="showPage('p1', document.querySelector('nav button'))">Vai al sintetico →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ P3: CONSUNTIVO 2025-26 ═══════════════════ -->
+<div id="p3" class="page">
+  <h1 class="arancio">Consuntivo 2025‑2026</h1>
+  <p class="sottotitolo">Zona Verona Custoza · inserisci i valori consuntivi per voce</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr class="head-main arancio"><th>Voce</th><th>Entrate</th><th>Uscite</th><th>Saldo</th></tr>
+        <tr class="head-sub arancio"><th>—</th><th>€</th><th>€</th><th>calcolato</th></tr>
+      </thead>
+      <tbody id="cons-corpo"></tbody>
+      <tfoot class="arancio">
+        <tr>
+          <td>Totale</td>
+          <td class="num entrata" id="cons-tot-e">—</td>
+          <td class="num uscita"  id="cons-tot-u">—</td>
+          <td class="num"         id="cons-tot-s">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <!-- bottone aggiungi voce libera -->
+  <div style="margin-top:16px">
+    <button class="btn-add" style="max-width:300px" onclick="consAggiungiRiga()">+ Aggiungi voce</button>
+  </div>
+  <div class="note-box">
+    <label>📝 Note — Consuntivo 2025‑2026</label>
+    <textarea id="note-p3" placeholder="Annotazioni sul consuntivo, scostamenti, osservazioni…" oninput="NOTE.p3=this.value"></textarea>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   VOCI PREVENTIVO 2027
+   ══════════════════════════════════════════════════ */
+const VOCI = [
+  { id:'censimenti',    label:'Censimenti',                                                 sottovoci:[{desc:'Quote censimento',e:800,u:800}] },
+  { id:'ristorni',      label:'Ristorni, fondi, erogazioni e contributi',                   sottovoci:[{desc:'Ristorno regionale',e:3000,u:0}] },
+  { id:'assemblee',     label:'Assemblee, Convegni ed eventi di Zona',                      sottovoci:[{desc:'Altri eventi di zona',e:0,u:0}], hasAssemblea:true },
+  { id:'attivita-zona', label:'Attività di Zona, Consiglio, Comitato, Fo.Ca., Pattuglie…', sottovoci:[{desc:'Attività ordinarie',e:2000,u:2000}] },
+  { id:'lc',            label:'Attività ed eventi di Branca L/C',                           sottovoci:[{desc:'Evento L/C',e:5000,u:5000}] },
+  { id:'eg',            label:'Attività ed eventi di Branca E/G',                           sottovoci:[{desc:'Evento E/G',e:8500,u:8500}] },
+  { id:'rs',            label:'Attività ed eventi di Branca R/S',                           sottovoci:[{desc:'Evento R/S',e:3500,u:3500}] },
+  { id:'beni-nd',       label:'Beni non durevoli e servizi',                                sottovoci:[{desc:'',e:0,u:0}] },
+  { id:'beni-d',        label:'Beni durevoli',                                              sottovoci:[{desc:'',e:0,u:300}] },
+  { id:'banca',         label:'Interessi e oneri bancari',                                  sottovoci:[{desc:'',e:0,u:300}] },
+];
+
+/* ══════════════════════════════════════════════════
+   VOCI CONSUNTIVO 2025-26 (stesse righe + voce libera)
+   ══════════════════════════════════════════════════ */
+const CONS = [
+  { id:'c-censimenti',    label:'Censimenti',                                                 e:0, u:0 },
+  { id:'c-ristorni',      label:'Ristorni, fondi, erogazioni e contributi',                   e:0, u:0 },
+  { id:'c-assemblee',     label:'Assemblee, Convegni ed eventi di Zona',                      e:0, u:0 },
+  { id:'c-attivita-zona', label:'Attività di Zona, Consiglio, Comitato, Fo.Ca., Pattuglie…', e:0, u:0 },
+  { id:'c-lc',            label:'Attività ed eventi di Branca L/C',                           e:0, u:0 },
+  { id:'c-eg',            label:'Attività ed eventi di Branca E/G',                           e:0, u:0 },
+  { id:'c-rs',            label:'Attività ed eventi di Branca R/S',                           e:0, u:0 },
+  { id:'c-beni-nd',       label:'Beni non durevoli e servizi',                                e:0, u:0 },
+  { id:'c-beni-d',        label:'Beni durevoli',                                              e:0, u:0 },
+  { id:'c-banca',         label:'Interessi e oneri bancari',                                  e:0, u:0 },
+];
+
+/* ══════════════════════════════════════════════════
+   CALCOLATORE ASSEMBLEA
+   ══════════════════════════════════════════════════ */
+const ASM = {
+  capiCensiti: 80, numPartecipanti: 48,
+  costoPranzo: 15, costoOrganizzazione: 0, costoService: 0, costoOspiti: 0,
+  quotaPartecipante: 0, quotaSolidarieta: 0,
+  costiExtra: [],
+};
+
+/* ══════════════════════════════════════════════════
+   UTILITY
+   ══════════════════════════════════════════════════ */
+const fmt = v => v !== 0
+  ? '€\u00A0' + Math.abs(v).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})
+  : '—';
+const fmtSaldo = v =>
+  (v > 0 ? '+\u00A0' : v < 0 ? '−\u00A0' : '') +
+  Math.abs(v).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const round2 = v => Math.round(v * 100) / 100;
+const perc   = (n, tot) => tot > 0 ? Math.round(n / tot * 100) : 0;
+
+/* ══════════════════════════════════════════════════
+   CALCOLATORE ASSEMBLEA — logica
+   ══════════════════════════════════════════════════ */
+function asmNonPartecipanti() { return Math.max(0, ASM.capiCensiti - ASM.numPartecipanti); }
+function asmCostoPranzoTot()  { return round2(ASM.numPartecipanti * ASM.costoPranzo); }
+function asmCostiExtraTot()   { return round2(ASM.costiExtra.reduce((s, v) => s + (+v.importo || 0), 0)); }
+function asmUsciteTot()       { return round2(asmCostoPranzoTot() + ASM.costoOrganizzazione + ASM.costoService + ASM.costoOspiti + asmCostiExtraTot()); }
+function asmEntrateTot()      { return round2(ASM.numPartecipanti * ASM.quotaPartecipante + asmNonPartecipanti() * ASM.quotaSolidarieta); }
+function asmEU()              { return { e: asmEntrateTot(), u: asmUsciteTot() }; }
+
+let asmExtraIdx = 0;
+function asmAggiungiCosto() {
+  const id = 'ax-' + (++asmExtraIdx);
+  ASM.costiExtra.push({ id, desc: '', importo: 0 });
+  asmRenderExtraRiga(id);
+  asmRicalcola();
+}
+function asmRimuoviCosto(id) {
+  ASM.costiExtra = ASM.costiExtra.filter(v => v.id !== id);
+  const tr = document.getElementById('asmex-tr-' + id);
+  if (tr) tr.remove();
+  asmRicalcola();
+}
+function asmChangeExtra(id, campo, val) {
+  const v = ASM.costiExtra.find(v => v.id === id);
+  if (v) { v[campo] = campo === 'importo' ? +val : val; asmRicalcola(); }
+}
+function asmRenderExtraRiga(id) {
+  const v = ASM.costiExtra.find(v => v.id === id);
+  const tbody = document.getElementById('asm-extra-tbody');
+  if (!tbody || !v) return;
+  const tr = document.createElement('tr');
+  tr.id = 'asmex-tr-' + id;
+  tr.innerHTML = `
+    <td style="padding:4px 6px">
+      <input type="text" placeholder="descrizione…" value="${v.desc}"
+        style="width:100%;border:1.5px solid #C8DFC8;border-radius:6px;padding:5px 8px;font-size:12px;"
+        oninput="asmChangeExtra('${id}','desc',this.value)">
+    </td>
+    <td style="padding:4px 6px;width:120px">
+      <div class="euro-wrap"><span style="left:8px;top:50%;transform:translateY(-50%);position:absolute;color:var(--grigio);font-size:12px">€</span>
+        <input type="number" min="0" step="10" value="${v.importo}"
+          style="width:100%;padding:5px 8px 5px 22px;border:1.5px solid #C8DFC8;border-radius:6px;font-size:13px;font-weight:600;color:var(--rosso);-moz-appearance:textfield;"
+          oninput="asmChangeExtra('${id}','importo',this.value)">
+      </div>
+    </td>
+    <td style="padding:4px 6px;width:28px;text-align:center">
+      <button class="btn-del" onclick="asmRimuoviCosto('${id}')">✕</button>
+    </td>`;
+  tbody.appendChild(tr);
+}
+
+function asmQuotaSuggerita() {
+  const p = ASM.numPartecipanti, np = asmNonPartecipanti();
+  if (p === 0) return { qp:0, qs:0 };
+  const tot = asmUsciteTot();
+  const raw = tot / (p + 0.3 * np);
+  const qp = Math.ceil(raw / 5) * 5;
+  const qs = Math.round(qp * 0.3 / 5) * 5;
+  return { qp, qs };
+}
+
+function buildCalcolatoreAssemblea() {
+  return `
+  <div class="asm-wrap">
+    <div class="asm-section-title">🏛️ Calcolatore Assemblea</div>
+    <div class="asm-params">
+      <div class="asm-field">
+        <label>Capi censiti</label>
+        <input type="number" id="asm-capi" value="${ASM.capiCensiti}" min="1" oninput="asmUpdate()">
+        <div class="hint" id="asm-hint-capi">totale zona</div>
+      </div>
+      <div class="asm-field">
+        <label>N° partecipanti</label>
+        <input type="number" id="asm-parti" value="${ASM.numPartecipanti}" min="0" oninput="asmUpdate()">
+        <div class="hint" id="asm-hint-parti">${perc(ASM.numPartecipanti, ASM.capiCensiti)}% dei censiti</div>
+      </div>
+      <div class="asm-field">
+        <label>Costo pranzo / persona</label>
+        <input type="number" id="asm-pranzo" value="${ASM.costoPranzo}" min="0" step="0.5" oninput="asmUpdate()">
+        <div class="hint">€ a partecipante</div>
+      </div>
+      <div class="asm-field">
+        <label>Costo casa / sede</label>
+        <input type="number" id="asm-casa" value="${ASM.costoOrganizzazione}" min="0" step="10" oninput="asmUpdate()">
+        <div class="hint">€ totale</div>
+      </div>
+      <div class="asm-field">
+        <label>Service / allestimento</label>
+        <input type="number" id="asm-service" value="${ASM.costoService}" min="0" step="10" oninput="asmUpdate()">
+        <div class="hint">€ totale</div>
+      </div>
+      <div class="asm-field">
+        <label>Ospiti / relatori</label>
+        <input type="number" id="asm-ospiti" value="${ASM.costoOspiti}" min="0" step="10" oninput="asmUpdate()">
+        <div class="hint">€ totale</div>
+      </div>
+    </div>
+    <div class="asm-calc">
+      <div class="asm-col entrate-col">
+        <div class="asm-col-title">Entrate</div>
+        <div class="asm-line">
+          <label>Quota partecipanti (<span id="d-parti">—</span>)</label>
+          <div class="quota-wrap"><span class="eur">€</span>
+            <input type="number" class="quota" id="asm-qp" value="0" min="0" step="5" oninput="asmUpdateQuote()">
+          </div>
+        </div>
+        <div class="asm-line">
+          <label>Quota solidarietà (<span id="d-nonparti">—</span> assenti)</label>
+          <div class="quota-wrap"><span class="eur">€</span>
+            <input type="number" class="quota" id="asm-qs" value="0" min="0" step="5" oninput="asmUpdateQuote()">
+          </div>
+        </div>
+        <div class="asm-subtotal"><span>Totale entrate</span><span id="d-etot">—</span></div>
+      </div>
+      <div class="asm-col uscite-col">
+        <div class="asm-col-title">Uscite</div>
+        <div class="asm-line"><label>Pranzo (<span id="d-parti2">—</span> pers.)</label><span class="computed rosso" id="d-pranzo-tot">—</span></div>
+        <div class="asm-line"><label>Casa / sede</label>                                 <span class="computed rosso" id="d-casa">—</span></div>
+        <div class="asm-line"><label>Service / allestimento</label>                      <span class="computed rosso" id="d-service">—</span></div>
+        <div class="asm-line"><label>Ospiti / relatori</label>                           <span class="computed rosso" id="d-ospiti">—</span></div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:4px"><tbody id="asm-extra-tbody"></tbody></table>
+        <button class="btn-add" style="margin-top:4px;font-size:11px;padding:5px 10px" onclick="asmAggiungiCosto()">+ Aggiungi voce di costo</button>
+        <div class="asm-subtotal" style="margin-top:10px"><span>Totale uscite</span><span id="d-utot">—</span></div>
+      </div>
+    </div>
+    <div class="asm-result">
+      <div><div class="lbl">Entrate assemblea → sintetico</div><div class="big" id="d-res-e">—</div></div>
+      <div style="text-align:right"><div class="lbl">Uscite assemblea → sintetico</div><div class="big" id="d-res-u">—</div></div>
+    </div>
+    <div class="asm-nota" id="asm-nota">Inserisci i parametri per calcolare le quote suggerite.</div>
+  </div>`;
+}
+
+function asmUpdate() {
+  ASM.capiCensiti         = +document.getElementById('asm-capi').value    || 0;
+  ASM.numPartecipanti     = +document.getElementById('asm-parti').value   || 0;
+  ASM.costoPranzo         = +document.getElementById('asm-pranzo').value  || 0;
+  ASM.costoOrganizzazione = +document.getElementById('asm-casa').value    || 0;
+  ASM.costoService        = +document.getElementById('asm-service').value || 0;
+  ASM.costoOspiti         = +document.getElementById('asm-ospiti').value  || 0;
+  asmRicalcola();
+}
+
+function asmRicalcola() {
+  const hintParti = document.getElementById('asm-hint-parti');
+  if (hintParti) hintParti.textContent = perc(ASM.numPartecipanti, ASM.capiCensiti) + '% dei censiti · ' + asmNonPartecipanti() + ' assenti';
+
+  const { qp, qs } = asmQuotaSuggerita();
+  document.getElementById('asm-qp').value = qp;
+  document.getElementById('asm-qs').value = qs;
+  ASM.quotaPartecipante = qp;
+  ASM.quotaSolidarieta  = qs;
+  asmRender();
+}
+
+function asmUpdateQuote() {
+  ASM.quotaPartecipante = +document.getElementById('asm-qp').value || 0;
+  ASM.quotaSolidarieta  = +document.getElementById('asm-qs').value || 0;
+  asmRender();
+}
+
+function asmRender() {
+  const p    = ASM.numPartecipanti;
+  const np   = asmNonPartecipanti();
+  const pTot = asmCostoPranzoTot();
+  const uTot = asmUsciteTot();
+  const eTot = asmEntrateTot();
+  const set  = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+
+  set('d-parti',     p);
+  set('d-parti2',    p);
+  set('d-nonparti',  np);
+  set('d-pranzo-tot', pTot ? fmt(pTot) : '—');
+  set('d-casa',      ASM.costoOrganizzazione ? fmt(ASM.costoOrganizzazione) : '—');
+  set('d-service',   ASM.costoService ? fmt(ASM.costoService) : '—');
+  set('d-ospiti',    ASM.costoOspiti  ? fmt(ASM.costoOspiti)  : '—');
+  set('d-utot',      fmt(uTot));
+  // aggiorna valori nelle righe extra (solo il display nel subtotal è sufficiente, i valori
+  // vengono letti direttamente da ASM.costiExtra tramite asmChangeExtra)
+  set('d-etot',      fmt(eTot));
+  set('d-res-e',     fmt(eTot));
+  set('d-res-u',     fmt(uTot));
+
+  const nota = uTot > 0
+    ? `Quote suggerite: € ${ASM.quotaPartecipante} partecipante · € ${ASM.quotaSolidarieta} solidarietà. Modificabili manualmente.`
+    : 'Inserisci i parametri per calcolare le quote suggerite.';
+  set('asm-nota', nota);
+
+  aggiornaTotaliVoce('assemblee');
+  aggiornaSintetico();
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER PAGINA 2 — DETTAGLIO
+   ══════════════════════════════════════════════════ */
+function buildPagina2() {
+  const container = document.getElementById('blocchi');
+  container.innerHTML = '';
+  VOCI.forEach(voce => {
+    const block = document.createElement('div');
+    block.className = 'voce-block';
+    block.id = 'block-' + voce.id;
+
+    let bodyContent = '';
+    if (voce.hasAssemblea) {
+      bodyContent = buildCalcolatoreAssemblea();
+      bodyContent += `<div class="section-sep">Altre voci assemblea / eventi di zona</div>`;
+    }
+    bodyContent += `
+      <table class="sottovoci">
+        <thead><tr>
+          <th>Descrizione</th>
+          <th class="num col-e">Entrate</th>
+          <th class="num col-u">Uscite</th>
+          <th class="col-del"></th>
+        </tr></thead>
+        <tbody id="sv-${voce.id}"></tbody>
+      </table>
+      <button class="btn-add" onclick="aggiungiRiga('${voce.id}')">+ Aggiungi sottovoce</button>`;
+
+    block.innerHTML = `
+      <div class="voce-header" onclick="toggleBlock('${voce.id}')">
+        <span class="voce-title">${voce.label}</span>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="voce-totali" id="tot-det-${voce.id}"></div>
+          <span class="chevron">▼</span>
+        </div>
+      </div>
+      <div class="voce-body">${bodyContent}</div>
+    `;
+    container.appendChild(block);
+    voce.sottovoci.forEach((sv, i) => renderRiga(voce.id, i, sv));
+    aggiornaTotaliVoce(voce.id);
+  });
+  asmUpdate();
+}
+
+function renderRiga(voceid, idx, sv) {
+  const tbody = document.getElementById('sv-' + voceid);
+  const tr = document.createElement('tr');
+  tr.id = `riga-${voceid}-${idx}`;
+  tr.innerHTML = `
+    <td><input type="text" placeholder="descrizione…" value="${sv.desc}" oninput="onChange('${voceid}',${idx},'desc',this.value)"></td>
+    <td class="col-e"><div class="euro-wrap"><span>€</span>
+      <input type="number" min="0" step="50" value="${sv.e}" oninput="onChange('${voceid}',${idx},'e',+this.value)">
+    </div></td>
+    <td class="col-u"><div class="euro-wrap"><span>€</span>
+      <input type="number" min="0" step="50" value="${sv.u}" oninput="onChange('${voceid}',${idx},'u',+this.value)">
+    </div></td>
+    <td class="col-del"><button class="btn-del" onclick="eliminaRiga('${voceid}',${idx})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function aggiungiRiga(voceid) {
+  const voce = VOCI.find(v => v.id === voceid);
+  const idx  = voce.sottovoci.length;
+  voce.sottovoci.push({ desc:'', e:0, u:0 });
+  renderRiga(voceid, idx, voce.sottovoci[idx]);
+  aggiornaTotaliVoce(voceid);
+  aggiornaSintetico();
+}
+
+function eliminaRiga(voceid, idx) {
+  const voce = VOCI.find(v => v.id === voceid);
+  if (voce.sottovoci.length <= 1) return;
+  voce.sottovoci.splice(idx, 1);
+  const tbody = document.getElementById('sv-' + voceid);
+  tbody.innerHTML = '';
+  voce.sottovoci.forEach((sv, i) => renderRiga(voceid, i, sv));
+  aggiornaTotaliVoce(voceid);
+  aggiornaSintetico();
+}
+
+function onChange(voceid, idx, campo, val) {
+  VOCI.find(v => v.id === voceid).sottovoci[idx][campo] = val;
+  aggiornaTotaliVoce(voceid);
+  aggiornaSintetico();
+}
+
+/* ══════════════════════════════════════════════════
+   CALCOLI PREVENTIVO
+   ══════════════════════════════════════════════════ */
+function totaliVoce(voceid) {
+  const voce = VOCI.find(v => v.id === voceid);
+  let e = voce.sottovoci.reduce((s, sv) => s + (+sv.e||0), 0);
+  let u = voce.sottovoci.reduce((s, sv) => s + (+sv.u||0), 0);
+  if (voce.hasAssemblea) { const {e:ae,u:au} = asmEU(); e += ae; u += au; }
+  return { e, u, s: round2(e - u) };
+}
+
+function aggiornaTotaliVoce(voceid) {
+  const { e, u } = totaliVoce(voceid);
+  const el = document.getElementById('tot-det-' + voceid);
+  if (!el) return;
+  el.innerHTML = `
+    <div class="voce-tot-item e"><div class="lbl">Entrate</div><div class="val">${fmt(e)}</div></div>
+    <div class="voce-tot-item u"><div class="lbl">Uscite</div><div class="val">${fmt(u)}</div></div>
+  `;
+}
+
+function aggiornaSintetico() {
+  const tbody = document.getElementById('tabella-corpo');
+  tbody.innerHTML = '';
+  let totE = 0, totU = 0;
+  VOCI.forEach(voce => {
+    const { e, u, s } = totaliVoce(voce.id);
+    totE += e; totU += u;
+    const sClass = s > 0 ? 'saldo-pos' : s < 0 ? 'saldo-neg' : 'saldo-zero';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="voce">${voce.label}</td>
+      <td class="num entrata">${fmt(e)}</td>
+      <td class="num uscita">${fmt(u)}</td>
+      <td class="num ${sClass}">${s !== 0 ? fmtSaldo(s) : '—'}</td>
+      <td class="link-det"><button onclick="vaiDettaglio('${voce.id}')">dettaglio</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('tot-e').textContent = fmt(totE);
+  document.getElementById('tot-u').textContent = fmt(totU);
+  const totS = round2(totE - totU);
+  const el = document.getElementById('tot-s');
+  el.textContent = fmtSaldo(totS);
+  el.style.color = totS >= 0 ? 'var(--verde)' : 'var(--rosso)';
+}
+
+/* ══════════════════════════════════════════════════
+   PAGINA 3 — CONSUNTIVO 2025-26
+   ══════════════════════════════════════════════════ */
+let consExtraIdx = 0;
+
+function buildConsuntivo() {
+  const tbody = document.getElementById('cons-corpo');
+  tbody.innerHTML = '';
+  CONS.forEach(voce => renderConsRiga(voce));
+  aggiornaConsuntivo();
+}
+
+function renderConsRiga(voce) {
+  const tbody = document.getElementById('cons-corpo');
+  const tr = document.createElement('tr');
+  tr.id = 'cons-tr-' + voce.id;
+  const isExtra = voce.extra;
+  tr.innerHTML = `
+    <td class="voce">
+      ${isExtra
+        ? `<input type="text" placeholder="descrizione voce…" value="${voce.label}"
+             style="width:100%;border:1.5px solid #C8DFC8;border-radius:6px;padding:5px 8px;font-size:13px;"
+             oninput="consChangeLabel('${voce.id}',this.value)">`
+        : voce.label}
+    </td>
+    <td>
+      <div class="num-input-wrap">
+        <span>€</span>
+        <input type="number" class="cons e" min="0" step="10" value="${voce.e||''}"
+               placeholder="0,00"
+               oninput="consChange('${voce.id}','e',+this.value)">
+      </div>
+    </td>
+    <td>
+      <div class="num-input-wrap">
+        <span>€</span>
+        <input type="number" class="cons u" min="0" step="10" value="${voce.u||''}"
+               placeholder="0,00"
+               oninput="consChange('${voce.id}','u',+this.value)">
+      </div>
+    </td>
+    <td class="num" id="cons-saldo-${voce.id}" style="font-weight:600">—</td>
+    ${isExtra ? `<td style="width:36px;text-align:center"><button class="btn-del" onclick="consElimina('${voce.id}')">✕</button></td>` : '<td></td>'}
+  `;
+  tbody.appendChild(tr);
+  aggiornaConsSaldo(voce.id);
+}
+
+function consChange(id, campo, val) {
+  const voce = CONS.find(v => v.id === id);
+  if (voce) { voce[campo] = val; aggiornaConsSaldo(id); aggiornaConsuntivo(); }
+}
+
+function consChangeLabel(id, val) {
+  const voce = CONS.find(v => v.id === id);
+  if (voce) voce.label = val;
+}
+
+function aggiornaConsSaldo(id) {
+  const voce = CONS.find(v => v.id === id);
+  if (!voce) return;
+  const s = round2((voce.e||0) - (voce.u||0));
+  const el = document.getElementById('cons-saldo-' + id);
+  if (!el) return;
+  el.textContent = s !== 0 ? fmtSaldo(s) : '—';
+  el.style.color = s > 0 ? 'var(--verde)' : s < 0 ? 'var(--rosso)' : 'var(--grigio)';
+}
+
+function aggiornaConsuntivo() {
+  const totE = CONS.reduce((s,v) => s + (+v.e||0), 0);
+  const totU = CONS.reduce((s,v) => s + (+v.u||0), 0);
+  const totS = round2(totE - totU);
+  document.getElementById('cons-tot-e').textContent = fmt(totE);
+  document.getElementById('cons-tot-u').textContent = fmt(totU);
+  const el = document.getElementById('cons-tot-s');
+  el.textContent = fmtSaldo(totS);
+  el.style.color = totS >= 0 ? 'var(--verde)' : 'var(--rosso)';
+}
+
+function consAggiungiRiga() {
+  const id = 'cons-extra-' + (++consExtraIdx);
+  const voce = { id, label:'', e:0, u:0, extra:true };
+  CONS.push(voce);
+  renderConsRiga(voce);
+  aggiornaConsuntivo();
+}
+
+function consElimina(id) {
+  const idx = CONS.findIndex(v => v.id === id);
+  if (idx >= 0) CONS.splice(idx, 1);
+  const tr = document.getElementById('cons-tr-' + id);
+  if (tr) tr.remove();
+  aggiornaConsuntivo();
+}
+
+/* ══════════════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════════════ */
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+function toggleBlock(voceid) { document.getElementById('block-' + voceid).classList.toggle('open'); }
+function vaiDettaglio(voceid) {
+  showPage('p2', document.querySelectorAll('nav button')[1]);
+  VOCI.forEach(v => {
+    const b = document.getElementById('block-' + v.id);
+    if (v.id === voceid) b.classList.add('open'); else b.classList.remove('open');
+  });
+  setTimeout(() => document.getElementById('block-' + voceid).scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+}
+
+/* ══════════════════════════════════════════════════
+   NOTE
+   ══════════════════════════════════════════════════ */
+const NOTE = { p1: '', p3: '' };
+
+/* ══════════════════════════════════════════════════
+   SALVA / CARICA JSON
+   ══════════════════════════════════════════════════ */
+function salvaJSON() {
+  const payload = {
+    versione: 1,
+    data: new Date().toISOString(),
+    note: NOTE,
+    asm: { ...ASM, costiExtra: ASM.costiExtra.map(v => ({...v})) },
+    voci: VOCI.map(v => ({ id: v.id, sottovoci: v.sottovoci.map(s => ({...s})) })),
+    cons: CONS.map(v => ({ id: v.id, label: v.label, e: v.e, u: v.u, extra: v.extra || false })),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bilanci-zona-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function caricaJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d.versione) throw new Error('File non riconosciuto');
+
+      // note
+      if (d.note) {
+        NOTE.p1 = d.note.p1 || '';
+        NOTE.p3 = d.note.p3 || '';
+        document.getElementById('note-p1').value = NOTE.p1;
+        document.getElementById('note-p3').value = NOTE.p3;
+      }
+
+      // ASM
+      if (d.asm) {
+        Object.assign(ASM, d.asm);
+        ASM.costiExtra = (d.asm.costiExtra || []).map(v => ({...v}));
+      }
+
+      // VOCI preventivo
+      if (d.voci) {
+        d.voci.forEach(saved => {
+          const voce = VOCI.find(v => v.id === saved.id);
+          if (voce) voce.sottovoci = saved.sottovoci;
+        });
+      }
+
+      // CONS
+      if (d.cons) {
+        // reset
+        CONS.length = 0;
+        d.cons.forEach(c => CONS.push({ id: c.id, label: c.label, e: c.e||0, u: c.u||0, extra: c.extra||false }));
+      }
+
+      // ricostruisce UI
+      buildPagina2();
+      aggiornaSintetico();
+      buildConsuntivo();
+
+      alert('Dati caricati correttamente ✓');
+    } catch(err) {
+      alert('Errore nel file: ' + err.message);
+    }
+    input.value = ''; // reset input per permettere ricaricamento stesso file
+  };
+  reader.readAsText(file);
+}
+
+/* ── init ── */
+buildPagina2();
+aggiornaSintetico();
+buildConsuntivo();
+</script>
+</body>
+</html>

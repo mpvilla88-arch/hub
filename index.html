@@ -185,6 +185,78 @@
     border: 1px solid var(--border);
   }
 
+  /* ── PROJECTS SECTION ── */
+  .projects-section { margin-bottom: 36px; }
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .project-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .project-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .project-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .priority-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .priority-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .project-links { display: flex; gap: 6px; }
+  .link-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    color: var(--sub);
+    background: var(--surface2);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .link-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .link-btn.prod {
+    border-color: rgba(167,139,250,0.35);
+    color: #a78bfa;
+    background: rgba(167,139,250,0.08);
+  }
+  .link-btn.prod:hover { border-color: rgba(167,139,250,0.6); }
+
   /* ── EMPTY ── */
   .empty {
     text-align: center;
@@ -218,6 +290,7 @@
 </header>
 
 <main>
+  <div class="projects-section" id="projects-section"></div>
   <div class="filters" id="filters">
     <button class="filter-btn active" data-cat="all">Tutte</button>
   </div>
@@ -230,6 +303,40 @@
 <script>
 let apps = [];
 let activeCategory = 'all';
+
+const PRIORITY_DOT = { alta: '#ef4444', media: '#f59e0b', bassa: '#64748b' };
+
+async function loadProjects() {
+  try {
+    const res = await fetch('projects.json?v=' + Date.now());
+    const projects = await res.json();
+    const wrap = document.getElementById('projects-section');
+    wrap.innerHTML = `
+      <div class="section-label">Progetti</div>
+      <div class="projects-grid">
+        ${projects.map(p => {
+          const devBtn = p.links?.dev
+            ? `<a class="link-btn" href="${p.links.dev}" target="_blank">↗ dev</a>` : '';
+          const prodBtn = p.links?.prod
+            ? `<a class="link-btn prod" href="${p.links.prod}" target="_blank">↗ prod</a>` : '';
+          const dot = PRIORITY_DOT[p.priority] || '#64748b';
+          return `
+            <div class="project-card" style="--accent:${p.color}">
+              <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${p.color};"></div>
+              <div class="project-name">${p.name}</div>
+              <div class="project-desc">${p.desc}</div>
+              <div class="project-meta">
+                <div class="priority-dot" style="background:${dot};"></div>
+                <span class="priority-label">${p.priority}</span>
+              </div>
+              <div class="project-links">${devBtn}${prodBtn}</div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    console.warn('projects.json non trovato', e);
+  }
+}
 
 async function loadApps() {
   try {
@@ -323,6 +430,7 @@ function cardHTML(a) {
 }
 
 document.getElementById('search').addEventListener('input', render);
+loadProjects();
 loadApps();
 </script>
 </body>

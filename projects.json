@@ -1,0 +1,56 @@
+[
+  {
+    "id": "spendix",
+    "name": "Spendix",
+    "desc": "Gestione spese domestiche e auto",
+    "color": "#3b82f6",
+    "priority": "media",
+    "links": {
+      "dev": "https://github.com/mpvilla88-arch/spendix",
+      "prod": "https://spendix-tau.vercel.app"
+    }
+  },
+  {
+    "id": "prosphero",
+    "name": "Prosphero",
+    "desc": "Portafoglio finanziario — SaaS freemium",
+    "color": "#a78bfa",
+    "priority": "alta",
+    "links": {
+      "dev": "https://github.com/mpvilla88-arch/prosphero",
+      "prod": "https://app.prosphero.it"
+    }
+  },
+  {
+    "id": "moduloop",
+    "name": "Moduloop",
+    "desc": "Moduli formativi AGESCI Veneto",
+    "color": "#6b4fa0",
+    "priority": "alta",
+    "links": {
+      "dev": "https://github.com/moduliagesciapp-creator/moduli-agesci",
+      "prod": "https://moduli-agesci.vercel.app"
+    }
+  },
+  {
+    "id": "zonapp",
+    "name": "ZonApp",
+    "desc": "Gestione zona scout AGESCI",
+    "color": "#10b981",
+    "priority": "bassa",
+    "links": {
+      "dev": "https://github.com/mpvilla88-arch/zona-app",
+      "prod": "https://www.zonapp.it"
+    }
+  },
+  {
+    "id": "ndc",
+    "name": "NDC",
+    "desc": "Note di Campo — annotazioni staff",
+    "color": "#b5451b",
+    "priority": "media",
+    "links": {
+      "dev": "https://github.com/mpvilla88-arch/ndc"
+    }
+  }
+]

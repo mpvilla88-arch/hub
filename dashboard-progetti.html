@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progetti — Marco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0e0e10;
+    --surface:   #17171a;
+    --surface2:  #1e1e22;
+    --surface3:  #26262c;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.13);
+    --text:      #e8e8ec;
+    --sub:       #888892;
+    --muted:     #55555f;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'Inter', sans-serif;
+
+    /* Project colors */
+    --spendix:   #3b82f6;
+    --prosphero: #a78bfa;
+    --moduloop:  #6b4fa0;
+    --zonapp:    #10b981;
+    --ndc:       #b5451b;
+
+    --tag-high:  rgba(239,68,68,0.15);
+    --tag-high-text: #f87171;
+    --tag-med:   rgba(245,158,11,0.15);
+    --tag-med-text: #fbbf24;
+    --tag-low:   rgba(100,116,139,0.15);
+    --tag-low-text: #94a3b8;
+    --tag-done:  rgba(16,185,129,0.15);
+    --tag-done-text: #34d399;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── LAYOUT ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 48px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+  }
+  .topbar-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .topbar-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .firebase-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .firebase-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .firebase-dot.connected { background: #10b981; }
+  .firebase-dot.error { background: #ef4444; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    padding: 6px 16px 3px;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 16px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background 0.15s;
+    border: none;
+    background: none;
+    color: var(--sub);
+    font-family: var(--sans);
+    font-size: 13px;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--surface2); color: var(--text); }
+  .nav-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .nav-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface3);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── VIEWS ── */
+  .view { display: none; flex-direction: column; gap: 20px; }
+  .view.active { display: flex; }
+
+  /* ── OVERVIEW GRID ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+
+  /* ── PROJECT CARD ── */
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .project-card:hover { border-color: var(--border2); }
+  .project-card[data-project="spendix"]::before  { background: var(--spendix); }
+  .project-card[data-project="prosphero"]::before { background: var(--prosphero); }
+  .project-card[data-project="moduloop"]::before  { background: var(--moduloop); }
+  .project-card[data-project="zonapp"]::before    { background: var(--zonapp); }
+  .project-card[data-project="ndc"]::before       { background: var(--ndc); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .card-desc {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+    line-height: 1.4;
+  }
+  .card-stack {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .card-backlog-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--sub);
+  }
+  .card-backlog-count span {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .card-last-session {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .priority-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .p-alta  { background: var(--tag-high); color: var(--tag-high-text); }
+  .p-media { background: var(--tag-med);  color: var(--tag-med-text); }
+  .p-bassa { background: var(--tag-low);  color: var(--tag-low-text); }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── BACKLOG TABLE ── */
+  .backlog-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .backlog-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 400;
+    padding: 0 10px 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .backlog-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .backlog-table tr:last-child td { border-bottom: none; }
+  .backlog-table tr:hover td { background: var(--surface2); }
+
+  .task-project-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .urgency-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ── PROJECT DETAIL ── */
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-accent {
+    width: 3px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .detail-name {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .detail-desc {
+    font-size: 13px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .detail-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .detail-box-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  /* ── TASK LIST ── */
+  .task-list { display: flex; flex-direction: column; gap: 6px; }
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .task-item:hover { border-color: var(--border); }
+  .task-checkbox {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: background 0.15s;
+  }
+  .task-checkbox:checked {
+    background: #10b981;
+    border-color: #10b981;
+  }
+  .task-text {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    line-height: 1.4;
+  }
+  .task-text.done {
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+  .task-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .task-item:hover .task-actions { opacity: 1; }
+  .task-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .task-btn:hover { color: var(--text); }
+
+  /* ── ADD TASK ── */
+  .add-task-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .add-task-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-task-input:focus { border-color: var(--border2); }
+  .add-task-input::placeholder { color: var(--muted); }
+
+  .urgency-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 7px 8px;
+    color: var(--sub);
+    font-family: var(--mono);
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 7px 12px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--border2); }
+  .btn-primary {
+    background: rgba(59,130,246,0.15);
+    border-color: rgba(59,130,246,0.3);
+    color: #60a5fa;
+  }
+  .btn-primary:hover { background: rgba(59,130,246,0.25); }
+
+  /* ── SESSIONS ── */
+  .session-list { display: flex; flex-direction: column; gap: 8px; }
+  .session-item {
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .session-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-top: 1px;
+  }
+  .session-text { font-size: 12px; color: var(--sub); line-height: 1.4; flex: 1; }
+
+  /* ── REUSE PANEL ── */
+  .reuse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .reuse-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .reuse-pattern {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .reuse-note { font-size: 12px; color: var(--sub); line-height: 1.4; }
+  .reuse-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .reuse-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface3);
+    color: var(--sub);
+  }
+
+  /* ── SETUP ── */
+  .setup-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    max-width: 540px;
+  }
+  .setup-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .setup-desc { font-size: 13px; color: var(--sub); line-height: 1.5; margin-bottom: 16px; }
+  .setup-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .setup-label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .setup-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .setup-input:focus { border-color: var(--border2); }
+  .setup-steps { margin: 16px 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .setup-steps li {
+    font-size: 12px;
+    color: var(--sub);
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 4px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .setup-steps li .step-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 18px;
+    padding-top: 1px;
+  }
+  .setup-steps a { color: #60a5fa; text-decoration: none; }
+  .setup-steps a:hover { text-decoration: underline; }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 20px 24px;
+    width: 440px;
+    max-width: 90vw;
+  }
+  .modal-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  .modal-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+  /* ── MISC ── */
+  .empty-state {
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  .global-backlog-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .global-backlog-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 700px) {
+    .shell { grid-template-columns: 1fr; grid-template-rows: 48px auto 1fr; }
+    .sidebar { grid-row: 2; flex-direction: row; overflow-x: auto; padding: 8px; gap: 4px; border-right: none; border-bottom: 1px solid var(--border); }
+    .sidebar-section { display: none; }
+    .nav-item { flex-direction: column; gap: 3px; padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+    .nav-count { display: none; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .main { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <span class="topbar-title">progetti/</span>
+    <span class="topbar-sub" id="active-view-label">overview</span>
+    <div class="topbar-right">
+      <div class="firebase-status">
+        <div class="firebase-dot" id="firebase-dot"></div>
+        <span id="firebase-label">non configurato</span>
+      </div>
+      <button class="btn" onclick="showView('setup')" style="font-size:11px;padding:4px 9px;">⚙ Firebase</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Vista</div>
+    <button class="nav-item active" onclick="showView('overview')" id="nav-overview">
+      <span style="font-family:var(--mono);font-size:13px">⊞</span> Overview
+    </button>
+    <button class="nav-item" onclick="showView('backlog')" id="nav-backlog">
+      <span style="font-family:var(--mono);font-size:13px">≡</span> Backlog globale
+      <span class="nav-count" id="backlog-total-count">—</span>
+    </button>
+    <button class="nav-item" onclick="showView('reuse')" id="nav-reuse">
+      <span style="font-family:var(--mono);font-size:13px">⟳</span> Riuso
+    </button>
+
+    <div class="sidebar-section" style="margin-top:10px;">Progetti</div>
+    <button class="nav-item" onclick="showProjectDetail('spendix')" id="nav-spendix">
+      <span class="nav-dot" style="background:var(--spendix)"></span> Spendix
+      <span class="nav-count" id="count-spendix">—</span>
+    </button>
+    <button class="nav-item" onclick="showProjectDetail('prosphero')" id="nav-prosphero">
+      <span class="nav-dot" style="background:var(--prosphero)"></span> Prosphero
+      <span class="nav-count" id="count-prosphero">—</span>
+    </button>
+    <button class="nav-item" onclick="showProjectDetail('moduloop')" id="nav-moduloop">
+      <span class="nav-dot" style="background:var(--moduloop)"></span> Moduloop
+      <span class="nav-count" id="count-moduloop">—</span>
+    </button>
+    <button class="nav-item" onclick="showProjectDetail('zonapp')" id="nav-zonapp">
+      <span class="nav-dot" style="background:var(--zonapp)"></span> ZonApp
+      <span class="nav-count" id="count-zonapp">—</span>
+    </button>
+    <button class="nav-item" onclick="showProjectDetail('ndc')" id="nav-ndc">
+      <span class="nav-dot" style="background:var(--ndc)"></span> NDC
+      <span class="nav-count" id="count-ndc">—</span>
+    </button>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── OVERVIEW ── -->
+    <div class="view active" id="view-overview">
+      <div class="section-header">
+        <span class="section-title">5 progetti attivi</span>
+        <span id="overview-date" style="font-family:var(--mono);font-size:10px;color:var(--muted)"></span>
+      </div>
+      <div class="overview-grid" id="overview-grid"></div>
+    </div>
+
+    <!-- ── BACKLOG GLOBALE ── -->
+    <div class="view" id="view-backlog">
+      <div class="section-header">
+        <span class="section-title">Backlog globale</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="filter-project" onchange="renderBacklogTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--sub);font-size:12px;outline:none;">
+            <option value="">Tutti i progetti</option>
+            <option value="spendix">Spendix</option>
+            <option value="prosphero">Prosphero</option>
+            <option value="moduloop">Moduloop</option>
+            <option value="zonapp">ZonApp</option>
+            <option value="ndc">NDC</option>
+          </select>
+          <select id="filter-urgency" onchange="renderBacklogTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px;color:var(--sub);font-size:12px;outline:none;">
+            <option value="">Tutte le priorità</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="bassa">Bassa</option>
+          </select>
+        </div>
+      </div>
+      <div class="global-backlog-section">
+        <table class="backlog-table">
+          <thead>
+            <tr>
+              <th style="width:32px"></th>
+              <th>Task</th>
+              <th style="width:100px">Progetto</th>
+              <th style="width:80px">Priorità</th>
+              <th style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody id="backlog-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PROJECT DETAIL ── -->
+    <div class="view" id="view-project">
+      <div class="detail-header">
+        <div class="detail-accent" id="detail-accent"></div>
+        <div>
+          <div class="detail-name" id="detail-name"></div>
+          <div class="detail-desc" id="detail-desc"></div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn" onclick="openSessionModal()" style="font-size:12px;">+ Nota sessione</button>
+          <button class="btn" onclick="openImportModal()" style="font-size:12px;background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.3);color:#a78bfa;">⬇ Importa da Claude</button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="section-title">Backlog</span>
+      </div>
+      <div class="detail-box">
+        <div class="task-list" id="project-task-list"></div>
+        <div class="add-task-row">
+          <input class="add-task-input" id="new-task-input" placeholder="Nuovo task..." onkeydown="if(event.key==='Enter') addTask()">
+          <select class="urgency-select" id="new-task-urgency">
+            <option value="alta">Alta</option>
+            <option value="media" selected>Media</option>
+            <option value="bassa">Bassa</option>
+          </select>
+          <button class="btn btn-primary" onclick="addTask()">Aggiungi</button>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top:4px;">
+        <span class="section-title">Sessioni</span>
+      </div>
+      <div class="detail-box">
+        <div class="session-list" id="project-session-list"></div>
+      </div>
+
+      <div class="section-header" style="margin-top:4px;">
+        <span class="section-title">Info stack</span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-box">
+          <div class="detail-box-title">Stack tecnico</div>
+          <div id="detail-stack" style="font-family:var(--mono);font-size:11px;color:var(--sub);line-height:1.8;"></div>
+        </div>
+        <div class="detail-box">
+          <div class="detail-box-title">Link</div>
+          <div id="detail-links" style="font-size:12px;line-height:2;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIUSO ── -->
+    <div class="view" id="view-reuse">
+      <div class="section-header">
+        <span class="section-title">Pattern riusabili tra progetti</span>
+      </div>
+      <div class="reuse-grid" id="reuse-grid"></div>
+    </div>
+
+    <!-- ── SETUP ── -->
+    <div class="view" id="view-setup">
+      <div class="section-header">
+        <span class="section-title">Configurazione Firebase</span>
+      </div>
+      <div class="setup-box">
+        <div class="setup-title">Connetti Firebase Firestore</div>
+        <div class="setup-desc">I dati sono ora salvati localmente nel browser. Collegando Firebase i dati diventano persistenti e accessibili da qualsiasi dispositivo, gratis.</div>
+
+        <ol class="setup-steps">
+          <li><span class="step-num">1.</span> Vai su <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> e crea un nuovo progetto</li>
+          <li><span class="step-num">2.</span> Aggiungi un'app Web al progetto (icona &lt;/&gt;)</li>
+          <li><span class="step-num">3.</span> Crea un database Firestore in modalità "test" (o con regole permissive per uso personale)</li>
+          <li><span class="step-num">4.</span> Copia i valori dalla config Firebase qui sotto</li>
+        </ol>
+
+        <div class="setup-field">
+          <label class="setup-label">API Key</label>
+          <input class="setup-input" id="fb-apiKey" placeholder="AIzaSy...">
+        </div>
+        <div class="setup-field">
+          <label class="setup-label">Project ID</label>
+          <input class="setup-input" id="fb-projectId" placeholder="my-project-12345">
+        </div>
+        <div class="setup-field">
+          <label class="setup-label">App ID</label>
+          <input class="setup-input" id="fb-appId" placeholder="1:123456:web:abc...">
+        </div>
+        <button class="btn btn-primary" onclick="saveFirebaseConfig()" style="margin-top:8px;">Salva e connetti</button>
+        <div id="setup-feedback" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SESSION MODAL -->
+<div class="modal-backdrop" id="session-modal">
+  <div class="modal">
+    <div class="modal-title">Aggiungi nota sessione</div>
+    <textarea class="modal-textarea" id="session-text" placeholder="Cosa hai fatto in questa sessione..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSessionModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="addSession()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT CLAUDE MODAL -->
+<div class="modal-backdrop" id="import-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-title">Importa aggiornamento da Claude</div>
+    <p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6;">
+      Incolla qui il blocco JSON generato da Claude a fine sessione.<br>
+      La dashboard aggiornerà automaticamente backlog, sessioni e priorità.
+    </p>
+    <textarea class="modal-textarea" id="import-json-text" placeholder='{ "project": "prosphero", "session": { ... }, ... }' style="height:180px;font-family:var(--mono);font-size:11px;"></textarea>
+    <div id="import-feedback" style="font-size:12px;min-height:18px;margin-top:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeImportModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="applyImport()">Applica</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── INITIAL DATA (from your project files) ──────────────────────────────────
+const INITIAL_DATA = {
+  spendix: {
+    name: 'Spendix',
+    desc: 'Gestione spese domestiche e auto — app personale',
+    stack: 'React + Vite\nSupabase (PostgreSQL)\nVercel',
+    priority: 'media',
+    lastSession: '2026-08-30',
+    links: { github: 'github.com/mpvilla88-arch/spendix', prod: 'spendix-tau.vercel.app' },
+    backlog: [
+      { id: 'sp1', text: 'Tracciamento consumi kWh/mc — charts in AnalisiCasa', urgency: 'media', done: false },
+      { id: 'sp2', text: 'Scadenza contratti utenze', urgency: 'bassa', done: false },
+      { id: 'sp3', text: 'Export CSV', urgency: 'bassa', done: false },
+      { id: 'sp4', text: 'Rename frontend fields a snake_case', urgency: 'bassa', done: false },
+      { id: 'sp5', text: 'Refactor src/pages/ in sottodirectory Auto/ e Casa/', urgency: 'bassa', done: false },
+      { id: 'sp6', text: 'Layout mobile icone matita/cestino in Utenze', urgency: 'bassa', done: false },
+    ],
+    sessions: [
+      { date: '2026-08-30', text: 'Rinnovo automatico abbonamenti + notifiche push. Cron GitHub Actions 4x/giorno.' },
+    ]
+  },
+  prosphero: {
+    name: 'Prosphero',
+    desc: 'Gestione portafoglio finanziario — SaaS con freemium',
+    stack: 'Next.js 16 + TypeScript\nSupabase (PostgreSQL)\nVercel + Cloudflare + Resend',
+    priority: 'alta',
+    lastSession: '2026-08-04',
+    links: { github: 'github.com/mpvilla88-arch/prosphero', prod: 'app.prosphero.it' },
+    backlog: [
+      { id: 'pr1', text: 'Google OAuth verifica — verificare app su Google Cloud Console prima del lancio pubblico', urgency: 'alta', done: false },
+      { id: 'pr2', text: 'API ETF commerciale — sostituire yfinance con Twelve Data al break-even', urgency: 'alta', done: false },
+      { id: 'pr3', text: 'Pagamenti — integrare Stripe o Lemon Squeezy; webhook aggiorna accounts.plan', urgency: 'media', done: false },
+      { id: 'pr4', text: 'Insights AI (/insights) — route server-side con Claude API; report mensile + analisi on-demand', urgency: 'media', done: false },
+      { id: 'pr5', text: 'Landing page — prosphero.it (root) da costruire come pagina marketing', urgency: 'media', done: false },
+      { id: 'pr6', text: 'Allineamento tipi residui — verificare as never in altre pagine', urgency: 'media', done: false },
+      { id: 'pr7', text: 'Verificare cast as never residui in liquidita, pensione, assicurazioni', urgency: 'bassa', done: false },
+      { id: 'pr8', text: 'ProfileSelector.tsx — rimuovere dal repo (non più usato)', urgency: 'bassa', done: false },
+      { id: 'pr9', text: 'Open Banking — Nordigen/GoCardless, valutare post break-even', urgency: 'bassa', done: false },
+    ],
+    sessions: [
+      { date: '2026-08-04', text: 'TourModal.tsx: spotlight 5 step, steps separati mobile/desktop. Email info@prosphero.it → Cloudflare Email Routing.' },
+      { date: '2026-08-01', text: 'Google OAuth configurato. SMTP Resend configurato. Flusso registrazione con conferma email.' },
+      { date: '2026-07-30', text: 'Dominio prosphero.it configurato. DNS Cloudflare. app.prosphero.it su Vercel.' },
+      { date: '2026-07-21', text: 'Sistema freemium implementato: features.ts, usePlan(), UpgradePrompt, gate su ETF/Liquidità/Pensione/Assicurazioni.' },
+    ]
+  },
+  moduloop: {
+    name: 'Moduloop',
+    desc: 'Gestione moduli formativi AGESCI Veneto — multi-regione',
+    stack: 'Next.js (App Router, JS)\nSupabase (PostgreSQL)\nVercel',
+    priority: 'alta',
+    lastSession: '2026-08-30',
+    links: { github: 'github.com/moduliagesciapp-creator/moduli-agesci', prod: 'moduli-agesci.vercel.app' },
+    backlog: [
+      { id: 'mo1', text: 'Export presenze per segreteria (xlsx/json, filtrato per modulo concluso)', urgency: 'alta', done: false },
+      { id: 'mo2', text: 'Definizione campi richiesti da Roma (da concordare)', urgency: 'alta', done: false },
+      { id: 'mo3', text: 'RLS su tutte le tabelle da riabilitare prima del go-live', urgency: 'alta', done: false },
+      { id: 'mo4', text: 'Iscrizione manuale da admin (forza capo fuori zona)', urgency: 'media', done: false },
+      { id: 'mo5', text: 'Email utente non visibile in tabella utenti (è in auth.users, non in profili)', urgency: 'media', done: false },
+      { id: 'mo6', text: 'Valutare controllo apertura sezione Presenze (solo dal giorno dell\'evento)', urgency: 'bassa', done: false },
+      { id: 'mo7', text: 'Notifiche in-app (pubblicazione modulo, nuova iscrizione)', urgency: 'bassa', done: false },
+      { id: 'mo8', text: 'Card 03 (Area Associativa) illustrazione da migliorare', urgency: 'bassa', done: false },
+    ],
+    sessions: [
+      { date: '2026-08-30', text: 'Brand Moduloop: logo 3 blocchi, palette viola, PublicHeader.jsx, favicon SVG, wordmark in HTML.' },
+      { date: '2026-08-29', text: 'Navigazione mobile bottom bar per ruolo. Scanner QR presenze (html5-qrcode). Pagina "I miei moduli" focadizona.' },
+      { date: '2026-08-26', text: 'Setup infrastruttura, home pubblica 6 card aree, auth, dashboard, gestione utenti, form moduli.' },
+    ]
+  },
+  zonapp: {
+    name: 'ZonApp',
+    desc: 'Gestione zona scout AGESCI — in produzione',
+    stack: 'React + Vite (JS)\nSupabase schema dev/prod\nVercel + Aruba',
+    priority: 'bassa',
+    lastSession: '2026-08-26',
+    links: { github: 'github.com/mpvilla88-arch/zona-app', prod: 'www.zonapp.it' },
+    backlog: [
+      { id: 'zo1', text: '#80 Repository attività/dinamiche — tabella attivita_zona, filtro branca + ricerca', urgency: 'media', done: false },
+      { id: 'zo2', text: '#84 Forum privato per ruolo — stanze statiche, thread multipli, notifiche push (analisi in corso)', urgency: 'bassa', done: false },
+      { id: 'zo3', text: '#47 Superadmin globale — multizona', urgency: 'bassa', done: false },
+    ],
+    sessions: [
+      { date: '2026-08-26', text: 'Go-live schema prod. Ruolo socio_giovane: push_subscriptions, visibile_ragazzi, news multi-destinatario. Dominio zonapp.it.' },
+      { date: '2026-07-01', text: 'Check-in QR su tipo_evento e occorrenza. Manuale utente 10 sezioni. Cascade eliminazione occorrenze.' },
+    ]
+  },
+  ndc: {
+    name: 'NDC',
+    desc: 'Note di Campo — annotazioni staff campi AGESCI',
+    stack: 'React + Supabase\nVercel\n(framework da confermare)',
+    priority: 'media',
+    lastSession: '2026-09-01',
+    links: { github: '—', prod: '—' },
+    backlog: [
+      { id: 'nd1', text: 'SQL completo — tabelle, relazioni, RLS (da eseguire da PC di sviluppo)', urgency: 'alta', done: false },
+      { id: 'nd2', text: 'Flusso import — parsing xlsx/PDF, chiamata LLM Anthropic, logica codice censimento', urgency: 'alta', done: false },
+      { id: 'nd3', text: 'Sviluppo UI — React mobile-first fedele ai file di design', urgency: 'alta', done: false },
+      { id: 'nd4', text: 'Etichette annotazioni come enum strutturato (colloquio personale, comportamento, momento critico)', urgency: 'media', done: false },
+      { id: 'nd5', text: 'Realtime updates — annotazioni in tempo reale tra i capi', urgency: 'media', done: false },
+      { id: 'nd6', text: 'Estrazione automatica foto dal PDF di presentazione', urgency: 'bassa', done: false },
+      { id: 'nd7', text: 'Notifiche push per nuove annotazioni su un allievo', urgency: 'bassa', done: false },
+      { id: 'nd8', text: 'Storico partecipazione allievo a più campi (vista aggregata)', urgency: 'bassa', done: false },
+    ],
+    sessions: [
+      { date: '2026-09-01', text: 'Sessione 1: definizione progetto, schema DB completo, RLS, design system Terracotta, flusso navigazione mobile.' },
+    ]
+  }
+};
+
+const REUSE_PATTERNS = [
+  {
+    pattern: 'QR Scanner presenze',
+    note: 'Implementato in ZonApp (jsQR) e Moduloop (html5-qrcode). Da unificare in un componente condiviso.',
+    tags: ['ZonApp', 'Moduloop', 'NDC (futuro)']
+  },
+  {
+    pattern: 'Notifiche push VAPID + cron',
+    note: 'Logica identica in Spendix, ZonApp e Moduloop. Cron via GitHub Actions, service worker, soglie di avviso.',
+    tags: ['Spendix', 'ZonApp', 'Moduloop']
+  },
+  {
+    pattern: 'Sistema ruoli AGESCI + RLS',
+    note: 'Ruoli (admin, focadizona, focareg, capo, socio_giovane) definiti in ZonApp e replicati in Moduloop e NDC. Schema e policy molto simili.',
+    tags: ['ZonApp', 'Moduloop', 'NDC']
+  },
+  {
+    pattern: 'Codice censimento AGESCI',
+    note: 'Identificatore univoco socio usato in ZonApp (soci), Moduloop (iscrizioni/presenze) e NDC (allievi). Logica lookup da unificare.',
+    tags: ['ZonApp', 'Moduloop', 'NDC']
+  },
+  {
+    pattern: 'Auth Supabase + middleware protezione route',
+    note: 'Pattern identico in tutti e 5 i progetti. Moduloop usa middleware.js Next.js, ZonApp/Spendix usano hook custom.',
+    tags: ['Tutti i progetti']
+  },
+  {
+    pattern: 'Freemium gate + piano utente',
+    note: 'Implementato solo in Prosphero (features.ts + usePlan()). Pattern da considerare per future monetizzazioni.',
+    tags: ['Prosphero']
+  },
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let db = null;
+let currentProject = null;
+let projectData = {};
+
+// ── STORAGE LAYER ────────────────────────────────────────────────────────────
+function lsGet(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+async function loadData() {
+  // Try Firebase first
+  const fbCfg = lsGet('firebase_config');
+  if (fbCfg && db) {
+    try {
+      const snap = await getDoc(doc(db, 'dashboard', 'projects'));
+      if (snap.exists()) {
+        projectData = snap.data();
+        return;
+      }
+    } catch(e) { console.warn('Firebase load failed, using local', e); }
+  }
+  // Fallback: localStorage or initial data
+  const local = lsGet('project_data');
+  projectData = local || JSON.parse(JSON.stringify(INITIAL_DATA));
+}
+
+async function saveData() {
+  lsSet('project_data', projectData);
+  if (db) {
+    try { await setDoc(doc(db, 'dashboard', 'projects'), projectData); }
+    catch(e) { console.warn('Firebase save failed', e); }
+  }
+}
+
+// ── FIREBASE ─────────────────────────────────────────────────────────────────
+async function initFirebase(cfg) {
+  const app = initializeApp(cfg);
+  db = getFirestore(app);
+  // test connection
+  await getDoc(doc(db, 'dashboard', 'projects'));
+  return true;
+}
+
+window.saveFirebaseConfig = async function() {
+  const cfg = {
+    apiKey:    document.getElementById('fb-apiKey').value.trim(),
+    projectId: document.getElementById('fb-projectId').value.trim(),
+    appId:     document.getElementById('fb-appId').value.trim(),
+    authDomain: `${document.getElementById('fb-projectId').value.trim()}.firebaseapp.com`,
+    storageBucket: `${document.getElementById('fb-projectId').value.trim()}.appspot.com`,
+    messagingSenderId: '000000000000',
+  };
+  const fb = document.getElementById('setup-feedback');
+  fb.textContent = 'Connessione in corso...';
+  try {
+    await initFirebase(cfg);
+    lsSet('firebase_config', cfg);
+    setFirebaseStatus(true);
+    fb.style.color = '#34d399';
+    fb.textContent = '✓ Connesso! I dati ora si sincronizzano su Firebase.';
+    await loadData();
+    renderAll();
+  } catch(e) {
+    fb.style.color = '#f87171';
+    fb.textContent = '✗ Errore: ' + e.message;
+  }
+};
+
+function setFirebaseStatus(ok, err) {
+  const dot = document.getElementById('firebase-dot');
+  const lbl = document.getElementById('firebase-label');
+  if (ok) { dot.className = 'firebase-dot connected'; lbl.textContent = 'Firebase connesso'; }
+  else if (err) { dot.className = 'firebase-dot error'; lbl.textContent = 'errore Firebase'; }
+  else { dot.className = 'firebase-dot'; lbl.textContent = 'solo locale'; }
+}
+
+// ── VIEWS ────────────────────────────────────────────────────────────────────
+const VIEWS = ['overview','backlog','project','reuse','setup'];
+
+window.showView = function(name) {
+  VIEWS.forEach(v => {
+    document.getElementById('view-' + v)?.classList.remove('active');
+    const n = document.getElementById('nav-' + v);
+    if (n) n.classList.remove('active');
+  });
+  document.getElementById('view-' + name)?.classList.add('active');
+  const nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  document.getElementById('active-view-label').textContent = name === 'project' ? currentProject : name;
+  if (name === 'overview') renderOverview();
+  if (name === 'backlog') renderBacklogTable();
+  if (name === 'reuse') renderReuse();
+};
+
+window.showProjectDetail = function(pid) {
+  currentProject = pid;
+  VIEWS.forEach(v => {
+    document.getElementById('view-' + v)?.classList.remove('active');
+    const n = document.getElementById('nav-' + v);
+    if (n) n.classList.remove('active');
+  });
+  ['spendix','prosphero','moduloop','zonapp','ndc'].forEach(p => {
+    document.getElementById('nav-' + p)?.classList.remove('active');
+  });
+  document.getElementById('view-project').classList.add('active');
+  document.getElementById('nav-' + pid)?.classList.add('active');
+  document.getElementById('active-view-label').textContent = pid;
+  renderProjectDetail(pid);
+};
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+const COLORS = { spendix:'#3b82f6', prosphero:'#a78bfa', moduloop:'#6b4fa0', zonapp:'#10b981', ndc:'#b5451b' };
+
+function urgencyClass(u) {
+  return u === 'alta' ? 'p-alta' : u === 'media' ? 'p-media' : 'p-bassa';
+}
+
+function renderAll() {
+  renderOverview();
+  renderSidebarCounts();
+  renderBacklogTable();
+  renderReuse();
+}
+
+function renderSidebarCounts() {
+  let total = 0;
+  Object.keys(projectData).forEach(pid => {
+    const items = (projectData[pid]?.backlog || []).filter(t => !t.done);
+    document.getElementById('count-' + pid).textContent = items.length;
+    total += items.length;
+  });
+  document.getElementById('backlog-total-count').textContent = total;
+}
+
+function renderOverview() {
+  const grid = document.getElementById('overview-grid');
+  document.getElementById('overview-date').textContent = new Date().toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'});
+  grid.innerHTML = Object.entries(projectData).map(([pid, p]) => {
+    const open = (p.backlog || []).filter(t => !t.done).length;
+    return `
+    <div class="project-card" data-project="${pid}" onclick="showProjectDetail('${pid}')">
+      <div class="card-header">
+        <div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-desc">${p.desc}</div>
+        </div>
+        <span class="priority-badge ${urgencyClass(p.priority)}">${p.priority}</span>
+      </div>
+      <div class="card-stack">${(p.stack || '').split('\n').join(' · ')}</div>
+      <div class="card-meta">
+        <span class="card-backlog-count"><span>${open}</span> task aperti</span>
+        <span class="card-last-session">ultima: ${p.lastSession || '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderBacklogTable() {
+  const fp = document.getElementById('filter-project').value;
+  const fu = document.getElementById('filter-urgency').value;
+  const tbody = document.getElementById('backlog-tbody');
+  let rows = [];
+  Object.entries(projectData).forEach(([pid, p]) => {
+    if (fp && fp !== pid) return;
+    (p.backlog || []).filter(t => !t.done).forEach(t => {
+      if (fu && fu !== t.urgency) return;
+      rows.push({ pid, pname: p.name, t });
+    });
+  });
+  // Sort: alta first
+  const order = { alta: 0, media: 1, bassa: 2 };
+  rows.sort((a, b) => (order[a.t.urgency] ?? 2) - (order[b.t.urgency] ?? 2));
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Nessun task aperto.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(({ pid, pname, t }) => `
+    <tr>
+      <td><input type="checkbox" class="task-checkbox" onchange="toggleTaskGlobal('${pid}','${t.id}',this)"></td>
+      <td style="color:var(--text)">${t.text}</td>
+      <td><span class="task-project-tag" style="background:${COLORS[pid]}22;color:${COLORS[pid]}">${pname}</span></td>
+      <td><span class="urgency-tag ${urgencyClass(t.urgency)}">${t.urgency}</span></td>
+      <td></td>
+    </tr>`).join('');
+}
+
+function renderProjectDetail(pid) {
+  const p = projectData[pid];
+  document.getElementById('detail-accent').style.background = COLORS[pid];
+  document.getElementById('detail-name').textContent = p.name;
+  document.getElementById('detail-desc').textContent = p.desc;
+  document.getElementById('detail-stack').innerHTML = (p.stack || '').split('\n').map(l => `<div>${l}</div>`).join('');
+  const lk = p.links || {};
+  document.getElementById('detail-links').innerHTML = Object.entries(lk).map(([k, v]) =>
+    v && v !== '—' ? `<div><span style="color:var(--muted);font-family:var(--mono);font-size:10px">${k} </span><a href="https://${v}" target="_blank" style="color:#60a5fa;font-size:12px">${v}</a></div>` : ''
+  ).join('');
+
+  // Tasks
+  const taskList = document.getElementById('project-task-list');
+  const tasks = (p.backlog || []).filter(t => !t.done);
+  if (!tasks.length) {
+    taskList.innerHTML = '<div class="empty-state">Backlog vuoto 🎉</div>';
+  } else {
+    taskList.innerHTML = tasks.map(t => `
+      <div class="task-item" id="task-${t.id}">
+        <input type="checkbox" class="task-checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask('${pid}','${t.id}',this)">
+        <span class="task-text ${t.done ? 'done' : ''}">${t.text}</span>
+        <span class="urgency-tag ${urgencyClass(t.urgency)}" style="font-size:9px">${t.urgency}</span>
+        <div class="task-actions">
+          <button class="task-btn" onclick="deleteTask('${pid}','${t.id}')" title="Elimina">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Sessions
+  const sessionList = document.getElementById('project-session-list');
+  const sessions = (p.sessions || []).slice().reverse();
+  if (!sessions.length) {
+    sessionList.innerHTML = '<div class="empty-state">Nessuna sessione registrata.</div>';
+  } else {
+    sessionList.innerHTML = sessions.map(s => `
+      <div class="session-item">
+        <div class="session-text">${s.text}</div>
+        <div class="session-date">${s.date}</div>
+      </div>`).join('');
+  }
+}
+
+function renderReuse() {
+  document.getElementById('reuse-grid').innerHTML = REUSE_PATTERNS.map(r => `
+    <div class="reuse-card">
+      <div class="reuse-pattern">${r.pattern}</div>
+      <div class="reuse-note">${r.note}</div>
+      <div class="reuse-tags">${r.tags.map(t => `<span class="reuse-tag">${t}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+// ── ACTIONS ──────────────────────────────────────────────────────────────────
+window.addTask = async function() {
+  const input = document.getElementById('new-task-input');
+  const urgency = document.getElementById('new-task-urgency').value;
+  const text = input.value.trim();
+  if (!text || !currentProject) return;
+  const id = 'task_' + Date.now();
+  projectData[currentProject].backlog = projectData[currentProject].backlog || [];
+  projectData[currentProject].backlog.push({ id, text, urgency, done: false });
+  projectData[currentProject].lastSession = new Date().toISOString().slice(0,10);
+  input.value = '';
+  await saveData();
+  renderProjectDetail(currentProject);
+  renderSidebarCounts();
+};
+
+window.toggleTask = async function(pid, tid, checkbox) {
+  const task = projectData[pid]?.backlog?.find(t => t.id === tid);
+  if (!task) return;
+  task.done = checkbox.checked;
+  await saveData();
+  renderProjectDetail(pid);
+  renderSidebarCounts();
+};
+
+window.toggleTaskGlobal = async function(pid, tid, checkbox) {
+  const task = projectData[pid]?.backlog?.find(t => t.id === tid);
+  if (!task) return;
+  task.done = checkbox.checked;
+  await saveData();
+  renderBacklogTable();
+  renderSidebarCounts();
+};
+
+window.deleteTask = async function(pid, tid) {
+  if (!projectData[pid]?.backlog) return;
+  projectData[pid].backlog = projectData[pid].backlog.filter(t => t.id !== tid);
+  await saveData();
+  renderProjectDetail(pid);
+  renderSidebarCounts();
+};
+
+window.openSessionModal = function() {
+  document.getElementById('session-modal').classList.add('open');
+  document.getElementById('session-text').value = '';
+  document.getElementById('session-text').focus();
+};
+
+window.closeSessionModal = function() {
+  document.getElementById('session-modal').classList.remove('open');
+};
+
+window.addSession = async function() {
+  const text = document.getElementById('session-text').value.trim();
+  if (!text || !currentProject) return;
+  const today = new Date().toISOString().slice(0, 10);
+  projectData[currentProject].sessions = projectData[currentProject].sessions || [];
+  projectData[currentProject].sessions.push({ date: today, text });
+  projectData[currentProject].lastSession = today;
+  closeSessionModal();
+  await saveData();
+  renderProjectDetail(currentProject);
+  renderOverview();
+};
+
+// ── IMPORT DA CLAUDE ─────────────────────────────────────────────────────────
+window.openImportModal = function() {
+  document.getElementById('import-modal').classList.add('open');
+  document.getElementById('import-json-text').value = '';
+  document.getElementById('import-feedback').textContent = '';
+  document.getElementById('import-feedback').style.color = '';
+  setTimeout(() => document.getElementById('import-json-text').focus(), 50);
+};
+
+window.closeImportModal = function() {
+  document.getElementById('import-modal').classList.remove('open');
+};
+
+window.applyImport = async function() {
+  const fb = document.getElementById('import-feedback');
+  const raw = document.getElementById('import-json-text').value.trim();
+
+  // Strip markdown code fences if Claude wrapped in ```json ... ```
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+  let payload;
+  try {
+    payload = JSON.parse(cleaned);
+  } catch(e) {
+    fb.style.color = '#f87171';
+    fb.textContent = '✗ JSON non valido: ' + e.message;
+    return;
+  }
+
+  const pid = payload.project;
+  if (!pid || !projectData[pid]) {
+    fb.style.color = '#f87171';
+    fb.textContent = '✗ Campo "project" mancante o non riconosciuto: ' + pid;
+    return;
+  }
+
+  let changes = [];
+
+  // 1. Nuova sessione
+  if (payload.session?.text) {
+    const today = payload.session.date || new Date().toISOString().slice(0,10);
+    projectData[pid].sessions = projectData[pid].sessions || [];
+    projectData[pid].sessions.push({ date: today, text: payload.session.text });
+    projectData[pid].lastSession = today;
+    changes.push('sessione aggiunta');
+  }
+
+  // 2. Priorità progetto
+  if (payload.priority && ['alta','media','bassa'].includes(payload.priority)) {
+    projectData[pid].priority = payload.priority;
+    changes.push('priorità → ' + payload.priority);
+  }
+
+  // 3. Task completati
+  if (Array.isArray(payload.completed_tasks)) {
+    payload.completed_tasks.forEach(tid => {
+      const task = projectData[pid]?.backlog?.find(t => t.id === tid);
+      if (task) { task.done = true; changes.push('task done: ' + tid); }
+    });
+  }
+
+  // 4. Nuovi task da aggiungere
+  if (Array.isArray(payload.new_tasks)) {
+    projectData[pid].backlog = projectData[pid].backlog || [];
+    payload.new_tasks.forEach(t => {
+      const id = 'task_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+      projectData[pid].backlog.push({
+        id,
+        text: t.text,
+        urgency: t.urgency || 'media',
+        done: false
+      });
+      changes.push('nuovo task: ' + t.text.slice(0,40));
+    });
+  }
+
+  // 5. Aggiornamento urgenza task esistenti
+  if (Array.isArray(payload.update_tasks)) {
+    payload.update_tasks.forEach(u => {
+      const task = projectData[pid]?.backlog?.find(t => t.id === u.id);
+      if (task) {
+        if (u.urgency) task.urgency = u.urgency;
+        if (u.text) task.text = u.text;
+        changes.push('aggiornato task: ' + u.id);
+      }
+    });
+  }
+
+  if (changes.length === 0) {
+    fb.style.color = '#fbbf24';
+    fb.textContent = '⚠ Nessuna modifica applicata. Controlla il formato JSON.';
+    return;
+  }
+
+  await saveData();
+  renderAll();
+
+  fb.style.color = '#34d399';
+  fb.textContent = '✓ Applicato: ' + changes.join(' · ');
+
+  setTimeout(() => {
+    closeImportModal();
+    if (currentProject === pid) renderProjectDetail(pid);
+  }, 1800);
+};
+
+document.getElementById('import-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeImportModal();
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  const fbCfg = lsGet('firebase_config');
+  if (fbCfg) {
+    try {
+      await initFirebase(fbCfg);
+      setFirebaseStatus(true);
+      // pre-fill setup fields
+      document.getElementById('fb-apiKey').value = fbCfg.apiKey || '';
+      document.getElementById('fb-projectId').value = fbCfg.projectId || '';
+      document.getElementById('fb-appId').value = fbCfg.appId || '';
+    } catch(e) {
+      setFirebaseStatus(false, true);
+    }
+  } else {
+    setFirebaseStatus(false, false);
+  }
+  await loadData();
+  renderAll();
+})();
+
+// close modal on backdrop click
+document.getElementById('session-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeSessionModal();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "dashboard-progetti",
+    "name": "Dashboard Progetti",
+    "desc": "Panoramica e gestione di tutti i progetti di sviluppo",
+    "url": "dashboard-progetti.html",
+    "category": "Dev",
+    "tags": ["progetti", "firebase", "backlog"],
+    "icon": "⬡"
+  },
+  {
+    "id": "fotovoltaico",
+    "name": "Simulatore Fotovoltaico",
+    "desc": "Calcolo risparmio e ritorno investimento impianto FV",
+    "url": "fotovoltaico.html",
+    "category": "Casa",
+    "tags": ["energia", "simulatore"],
+    "icon": "☀"
+  },
+  {
+    "id": "piano-iva",
+    "name": "Piano Finanziario P.IVA",
+    "desc": "Gestione e proiezioni finanziarie attività",
+    "url": "piano-iva.html",
+    "category": "Finanze",
+    "tags": ["p.iva", "finanze", "proiezioni"],
+    "icon": "◈"
+  }
+]

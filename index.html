@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub — Marco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0e0e10;
+    --surface:  #17171a;
+    --surface2: #1e1e22;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.14);
+    --text:     #e8e8ec;
+    --sub:      #888892;
+    --muted:    #55555f;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'Inter', sans-serif;
+    --accent:   #a78bfa;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    margin-right: 8px;
+  }
+  .logo span { color: var(--accent); }
+
+  /* ── SEARCH ── */
+  .search-wrap {
+    flex: 1;
+    max-width: 360px;
+    position: relative;
+  }
+  .search-wrap svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  #search {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 6px 10px 6px 32px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #search::placeholder { color: var(--muted); }
+  #search:focus { border-color: var(--border2); }
+
+  /* ── MAIN ── */
+  main {
+    padding: 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── CATEGORY FILTERS ── */
+  .filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .filter-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--sub);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #0e0e10; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 36px; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+  .card:hover { border-color: var(--border2); background: var(--surface2); }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .card-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .card-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: var(--sub);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .card-footer {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── EMPTY ── */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 13px;
+    display: none;
+  }
+  .empty.visible { display: block; }
+
+  /* ── LOADING ── */
+  .loading {
+    text-align: center;
+    padding: 60px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Marco<span>/</span>hub</div>
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="search" placeholder="Cerca app…" autocomplete="off">
+  </div>
+</header>
+
+<main>
+  <div class="filters" id="filters">
+    <button class="filter-btn active" data-cat="all">Tutte</button>
+  </div>
+  <div id="content">
+    <div class="loading">Caricamento…</div>
+  </div>
+  <div class="empty" id="empty">Nessuna app trovata.</div>
+</main>
+
+<script>
+let apps = [];
+let activeCategory = 'all';
+
+async function loadApps() {
+  try {
+    const res = await fetch('apps.json?v=' + Date.now());
+    apps = await res.json();
+  } catch(e) {
+    document.getElementById('content').innerHTML =
+      '<div class="loading" style="color:#f87171">Errore nel caricamento di apps.json</div>';
+    return;
+  }
+  buildFilters();
+  render();
+}
+
+function buildFilters() {
+  const cats = [...new Set(apps.map(a => a.category))].sort();
+  const wrap = document.getElementById('filters');
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.dataset.cat = cat;
+    btn.textContent = cat;
+    btn.onclick = () => setCategory(cat);
+    wrap.appendChild(btn);
+  });
+  wrap.querySelector('[data-cat="all"]').onclick = () => setCategory('all');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+  render();
+}
+
+function render() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+
+  const filtered = apps.filter(a => {
+    const matchCat = activeCategory === 'all' || a.category === activeCategory;
+    const matchQ = !q ||
+      a.name.toLowerCase().includes(q) ||
+      a.desc.toLowerCase().includes(q) ||
+      (a.tags || []).some(t => t.toLowerCase().includes(q));
+    return matchCat && matchQ;
+  });
+
+  const empty = document.getElementById('empty');
+  const content = document.getElementById('content');
+
+  if (filtered.length === 0) {
+    content.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+
+  // group by category
+  const groups = {};
+  filtered.forEach(a => {
+    if (!groups[a.category]) groups[a.category] = [];
+    groups[a.category].push(a);
+  });
+
+  const showSections = activeCategory === 'all' && !q;
+
+  if (showSections) {
+    content.innerHTML = Object.entries(groups).map(([cat, items]) => `
+      <div class="section">
+        <div class="section-label">${cat}</div>
+        <div class="grid">${items.map(cardHTML).join('')}</div>
+      </div>
+    `).join('');
+  } else {
+    content.innerHTML = `<div class="grid">${filtered.map(cardHTML).join('')}</div>`;
+  }
+}
+
+function cardHTML(a) {
+  const tags = (a.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+  return `
+    <a class="card" href="${a.url}" title="${a.name}">
+      <div class="card-top">
+        <div class="card-icon">${a.icon || '◆'}</div>
+        <div class="card-name">${a.name}</div>
+      </div>
+      <div class="card-desc">${a.desc}</div>
+      <div class="card-footer">${tags}</div>
+    </a>`;
+}
+
+document.getElementById('search').addEventListener('input', render);
+loadApps();
+</script>
+</body>
+</html>
